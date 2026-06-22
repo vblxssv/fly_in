@@ -1,17 +1,22 @@
-.PHONY: run clean
+.PHONY: run clean lint
 
-# MAP = "maps/easy/01_linear_path.txt"
-MAP = "test_map.txt"
+MAP ?= test_map.txt
+VENV = venv
+PYTHON = $(VENV)/bin/python3
+PIP = $(VENV)/bin/pip
 
-run:
-	python3 main.py $(MAP)
+venv:
+	python3 -m venv $(VENV)
+	$(PIP) install --upgrade pip
+	$(PIP) install -r requirements.txt
+
+run: venv
+	$(PYTHON) main.py $(MAP)
+
+lint: venv
+	$(VENV)/bin/flake8 src/
+	$(VENV)/bin/mypy src/ --disallow-untyped-defs
 
 clean:
+	rm -rf $(VENV)
 	find . -type d -name "__pycache__" -exec rm -rf {} +
-	find . -type d -name ".mypy_cache" -exec rm -rf {} +
-	find . -type d -name ".pytest_cache" -exec rm -rf {} +
-
-lint:
-	flake8 src/
-	mypy -p src --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
-

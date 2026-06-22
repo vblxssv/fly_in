@@ -1,7 +1,5 @@
-from src.parser.parser import Parser
 from pydantic import ValidationError
 from src.models.factory import GraphFactory
-from src.models.graph import Graph
 
 
 class Application:
@@ -10,10 +8,8 @@ class Application:
 
     def run(self) -> None:
         try:
-            content = Parser.parse(self.map_path)
-            graph: Graph = GraphFactory.create(content)
+            graph = GraphFactory.load_from_file(self.map_path)
             print(graph)
-
         except (OSError, ValidationError) as e:
             print(f"Config error: {e}")
             return
