@@ -81,6 +81,19 @@ class Parser:
                 else:
                     raise ValueError(f"Error: unknown key '{key}'")
 
+        start_hubs = [h for h in data['hubs'] if h['type'] == 'start_hub']
+        end_hubs = [h for h in data['hubs'] if h['type'] == 'end_hub']
+
+        if len(start_hubs) != 1:
+            raise ValueError(
+                f"Error: expected exactly one "
+                f"start_hub, found {len(start_hubs)}"
+            )
+        if len(end_hubs) != 1:
+            raise ValueError(
+                f"Error: expected exactly one end_hub, found {len(end_hubs)}"
+            )
+
         if 'nb_drones' not in data:
             raise ValueError("Error: missing required parameter 'nb_drones'")
 

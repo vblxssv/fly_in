@@ -7,6 +7,8 @@ class Graph:
     def __init__(self) -> None:
         self.zones: Dict[str, Zone] = {}
         self.adjacency_list: Dict[str, List[Edge]] = {}
+        self.start: str = ""
+        self.end: str = ""
 
     def add_zone(self, zone: Zone) -> None:
         self.zones[zone.name] = zone
