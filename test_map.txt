@@ -1,5 +1,5 @@
 # Easy Level 1: Simple linear path
-nb_drones: 2
+nb_drones: 3
 
 connection: start-waypoint1
 connection: waypoint1-waypoint2            
