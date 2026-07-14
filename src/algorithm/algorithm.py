@@ -6,14 +6,30 @@ from typing import List
 
 class IAlgorithm(ABC):
     @abstractmethod
-    def compute_turn(self, state: SimulationState) -> List[Move]:
+    def calculate_path(self, state: SimulationState, start: str) -> List[str]:
         pass
 
 
-class Algo1(IAlgorithm):
-    def compute_turn(self, state: SimulationState) -> List[Move]:
+class Dijkstra(IAlgorithm):
+    def calculate_path(self, state: SimulationState, start: str) -> List[str]:
         return []
 
 
 class Algo2(IAlgorithm):
     pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
