@@ -2,7 +2,7 @@
 nb_drones: 3
 
 connection: start-waypoint1
-connection: waypoint1-waypoint2            
+connection: waypoint1-waypoint2
 connection: waypoint2-goal
 connection: start-waypoint3
 connection: waypoint3-waypoint2

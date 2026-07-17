@@ -11,8 +11,7 @@ class SimulationEngine:
         self.state = state
 
     def run(self):
-        print("Pizda")
         print(self.state.graph)
 
-        for drone in self.state.drones:
-            print(drone)
+        path = self.algorithm.calculate_path(self.state, self.state.graph.start)
+        print(path)
