@@ -16,4 +16,5 @@ class ConsoleRenderer(IRenderer):
 
 
 class PyGameRenderer(IRenderer):
-    pass
+    def render(self, state: SimulationState, moves: List[Move]) -> None:
+        pass

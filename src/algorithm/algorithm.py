@@ -3,7 +3,6 @@ from src.models.state import SimulationState
 from typing import List
 from heapq import heappop, heappush
 from src.models.zone import ZoneType
-from typing import Dict, Optional, Tuple
 
 
 class IAlgorithm(ABC):
@@ -68,10 +67,10 @@ class Dijkstra(IAlgorithm):
             return []
 
         path: List[str] = []
-        current: str | None = end
+        curr: str | None = end
 
-        while current:
-            path.append(current)
-            current = previous[current]
+        while curr:
+            path.append(curr)
+            curr = previous[curr]
 
         return path[::-1]

@@ -1,6 +1,9 @@
 from src.algorithm.algorithm import IAlgorithm
 from src.renderer.renderer import IRenderer
 from src.models.state import SimulationState
+from src.models.frame import Frame
+from typing import List
+from src.models.move import Move
 
 
 class SimulationEngine:
@@ -10,8 +13,17 @@ class SimulationEngine:
         self.renderer = renderer
         self.state = state
 
-    def run(self):
-        print(self.state.graph)
+    def _get_zone_occupancy(self, zone: str) -> int:
+        return 0
 
-        path = self.algorithm.calculate_path(self.state, self.state.graph.start)
-        print(path)
+    def _get_edge_occupancy(self, source: str, target: str) -> int:
+        return 0
+
+    def _calculate_moves(self) -> List[Move]:
+        return []
+
+    def _apply_moves(self, moves: List[Move]) -> None:
+        pass
+
+    def run(self) -> List[Frame]:
+        return []
