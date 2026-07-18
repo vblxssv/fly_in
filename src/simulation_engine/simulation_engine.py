@@ -101,6 +101,15 @@ class SimulationEngine:
                 move = moves_by_drone.get(drone.id)
                 if move is not None and move.action == DroneStatus.IN_TRANSIT:
                     self._start_transit(drone, move.target)
+                    # A transit that starts THIS turn must also spend its
+                    # first tick THIS turn, so that every official engine
+                    # turn (start or continuation) advances a transit by
+                    # exactly one tick. Without this, a 1-tick (normal
+                    # zone) transit would need 2 turns to resolve instead
+                    # of 1, and the renderer (which assumes 1 official
+                    # turn == 1 tick) would show teleporting/duplicated
+                    # animation instead of a smooth move.
+                    self._progress_transit(drone)
 
     def run(self) -> List[Frame]:
         golden_path: List[str] = self.algorithm.calculate_path(

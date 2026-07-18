@@ -1,5 +1,5 @@
 from collections import deque
-from math import cos, sin, pi
+from math import cos, sin, pi, ceil
 from typing import Dict, List, Tuple
 
 import pygame
@@ -111,6 +111,64 @@ class PyGameRenderer(IRenderer):
         return positions
 
     # ------------------------------------------------------------------ #
+    # Transit progress helpers
+    # ------------------------------------------------------------------ #
+
+    def _compute_transit_fractions(
+        self, state: SimulationState, moves: List[Move]
+    ) -> Dict[int, Tuple[float, float, str, str]]:
+        """
+        For every drone moving this turn (whether it is already IN_TRANSIT
+        going into the turn, or it starts transit THIS turn per `moves`),
+        compute the overall fraction of the edge covered *before* this
+        turn's update (frac_start) and *after* this turn's update
+        (frac_end). This lets a multi-turn transit (e.g. a 2-turn
+        restricted zone) animate as one continuous move split across
+        turns, and lets a 1-turn transit (normal/priority zone) still
+        animate fully during its single turn -- even though the engine
+        may resolve it to WAITING-at-destination within that same turn's
+        internal update, before the *next* frame's snapshot is taken.
+        """
+        fractions: Dict[int, Tuple[float, float, str, str]] = {}
+        moves_by_drone = {m.drone_id: m for m in moves if m.action == DroneStatus.IN_TRANSIT}
+
+        for drone in state.drones:
+            if drone.status == DroneStatus.IN_TRANSIT and drone.current_edge_target is not None:
+                # Already mid-transit going into this turn (multi-turn edge).
+                target = drone.current_edge_target
+                zone = state.graph.zones[target]
+                total_duration = max(1, ceil(zone.type.cost))
+
+                elapsed_before = max(0, min(total_duration, total_duration - drone.turns_remaining))
+                elapsed_after = min(total_duration, elapsed_before + 1)
+
+                fractions[drone.id] = (
+                    elapsed_before / total_duration,
+                    elapsed_after / total_duration,
+                    drone.current_zone,
+                    target,
+                )
+            elif drone.status == DroneStatus.WAITING:
+                # Not moving yet in this snapshot -- but might start this turn.
+                move = moves_by_drone.get(drone.id)
+                if move is None:
+                    continue
+
+                target = move.target
+                zone = state.graph.zones[target]
+                total_duration = max(1, ceil(zone.type.cost))
+                elapsed_after = min(total_duration, 1) / total_duration
+
+                fractions[drone.id] = (
+                    0.0,
+                    elapsed_after,
+                    drone.current_zone,
+                    target,
+                )
+
+        return fractions
+
+    # ------------------------------------------------------------------ #
     # Animating one turn: interpolate from frame -> next_frame
     # ------------------------------------------------------------------ #
 
@@ -123,8 +181,7 @@ class PyGameRenderer(IRenderer):
         total_turns: int,
     ) -> bool:
         started = [m for m in frame.moves if m.action == DroneStatus.IN_TRANSIT]
-        starting_zone = {m.drone_id: self._drone_zone(frame.state, m.drone_id) for m in started}
-        target_zone = {m.drone_id: m.target for m in started}
+        transit_fracs = self._compute_transit_fractions(frame.state, frame.moves)
 
         for step in range(self.STEPS_PER_TURN):
             if not self._pump_events():
@@ -134,9 +191,9 @@ class PyGameRenderer(IRenderer):
             self._screen.fill(self.BACKGROUND)
             self._draw_zones(frame.state, positions, highlight={m.target for m in started} if progress > 0.05 else set())
             self._draw_edges(frame.state, positions, highlight_edges={
-                frozenset({starting_zone[m.drone_id], m.target}) for m in started
+                frozenset({self._drone_zone(frame.state, m.drone_id), m.target}) for m in started
             })
-            self._draw_drones(frame.state, positions, starting_zone, target_zone, progress)
+            self._draw_drones(frame.state, positions, transit_fracs, progress)
             self._draw_hud(frame.state, turn_index, total_turns, started)
 
             pygame.display.flip()
@@ -149,7 +206,7 @@ class PyGameRenderer(IRenderer):
         self._screen.fill(self.BACKGROUND)
         self._draw_zones(frame.state, positions, highlight=set())
         self._draw_edges(frame.state, positions, highlight_edges=set())
-        self._draw_drones(frame.state, positions, {}, {}, 0.0)
+        self._draw_drones(frame.state, positions, {}, 0.0)
         self._draw_hud(frame.state, turn_index, total_turns, [])
         self._draw_summary(frame.state)
         pygame.display.flip()
@@ -205,10 +262,27 @@ class PyGameRenderer(IRenderer):
                 label = self._small_font.render(f"{occupancy}/{edge.capacity}", True, self.TEXT_COLOR)
                 self._screen.blit(label, label.get_rect(center=mid))
 
-    def _draw_drones(self, state: SimulationState, positions, starting_zone, target_zone, progress: float) -> None:
+    def _draw_drones(
+        self,
+        state: SimulationState,
+        positions,
+        transit_fracs: Dict[int, Tuple[float, float, str, str]],
+        progress: float,
+    ) -> None:
+        # A drone counts as "moving this frame" if it has a transit fraction
+        # entry -- this includes drones whose `status` is still WAITING in
+        # this snapshot but which start transit THIS turn (their status
+        # only flips to IN_TRANSIT in the *next* snapshot). Relying on
+        # `status == IN_TRANSIT` alone would miss exactly that case and
+        # draw them as stationary for the whole turn, then jump them to
+        # the destination on the next frame (teleport).
+        moving_ids = set(transit_fracs.keys())
+
         # Group stationary drones per zone to spread them out visually.
         stationary_by_zone: Dict[str, List] = {}
         for drone in state.drones:
+            if drone.id in moving_ids:
+                continue
             if drone.status in (DroneStatus.WAITING, DroneStatus.DELIVERED):
                 stationary_by_zone.setdefault(drone.current_zone, []).append(drone)
 
@@ -219,16 +293,22 @@ class PyGameRenderer(IRenderer):
             self._scatter_draw(drones, cx, cy)
 
         for drone in state.drones:
-            if drone.status != DroneStatus.IN_TRANSIT:
+            frac_info = transit_fracs.get(drone.id)
+            if frac_info is None:
                 continue
-            src = starting_zone.get(drone.id, drone.current_zone)
-            dst = target_zone.get(drone.id, drone.current_edge_target)
+
+            frac_start, frac_end, src, dst = frac_info
             if src not in positions or dst not in positions:
                 continue
+
+            # Interpolate only across the slice of the edge covered THIS
+            # turn (frac_start -> frac_end), not the whole src->dst span.
+            overall_frac = frac_start + (frac_end - frac_start) * progress
+
             x1, y1 = positions[src]
             x2, y2 = positions[dst]
-            x = x1 + (x2 - x1) * progress
-            y = y1 + (y2 - y1) * progress
+            x = x1 + (x2 - x1) * overall_frac
+            y = y1 + (y2 - y1) * overall_frac
             pygame.draw.circle(self._screen, self.DRONE_COLOR, (int(x), int(y)), self.DRONE_RADIUS)
             label = self._small_font.render(f"D{drone.id}", True, self.DRONE_COLOR)
             self._screen.blit(label, label.get_rect(center=(int(x), int(y) - 14)))

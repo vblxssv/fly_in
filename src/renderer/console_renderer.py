@@ -1,7 +1,14 @@
-from src.renderer.renderer import IRenderer
-from abc import abstractmethod
+import os
+import sys
+import time
+from collections import deque
+from typing import Dict, List, Optional, Set
+
+from src.models.state import SimulationState
+from src.models.move import Move
+from src.models.drone import Drone, DroneStatus
 from src.models.frame import Frame
-from typing import List
+from src.renderer.renderer import IRenderer
 
 
 class ConsoleRenderer(IRenderer):
@@ -16,7 +23,9 @@ class ConsoleRenderer(IRenderer):
 
         total = len(frames)
         for i, frame in enumerate(frames, start=1):
-            self.render(frame.state, frame.moves, turn_label=f"{i}/{total}")
+            self._render_frame(
+                frame.state, frame.moves, turn_label=f"{i}/{total}"
+            )
 
         self._clear_screen()
         print("=== Simulation finished ===\n")
@@ -24,28 +33,41 @@ class ConsoleRenderer(IRenderer):
         print()
         self._print_summary(frames[-1].state)
 
-    def render(self, state: SimulationState, moves: List[Move], turn_label: Optional[str] = None) -> None:
+    def _render_frame(
+        self,
+        state: SimulationState,
+        moves: List[Move],
+        turn_label: Optional[str] = None,
+    ) -> None:
         label = turn_label if turn_label is not None else str(state.turn)
 
-        # Sub-frame 1: plain situation before this turn's moves are applied.
         self._draw(state, moves, label, highlighted=False)
         time.sleep(self.STEP_DELAY)
 
         started = [m for m in moves if m.action == DroneStatus.IN_TRANSIT]
         if started:
-            # Sub-frame 2: highlight what's about to move this turn.
             self._draw(state, moves, label, highlighted=True)
             time.sleep(self.STEP_DELAY)
 
-    # ------------------------------------------------------------------ #
-    # Drawing a single sub-frame
-    # ------------------------------------------------------------------ #
-
-    def _draw(self, state: SimulationState, moves: List[Move], label: str, highlighted: bool) -> None:
+    def _draw(
+        self,
+        state: SimulationState,
+        moves: List[Move],
+        label: str,
+        highlighted: bool,
+    ) -> None:
         started = [m for m in moves if m.action == DroneStatus.IN_TRANSIT]
-        highlight_zones = {m.target for m in started} if highlighted else set()
+        highlight_zones = (
+            {m.target for m in started} if highlighted else set()
+        )
         highlight_edges = (
-            {frozenset({self._drone_by_id(state, m.drone_id).current_zone, m.target}) for m in started}
+            {
+                frozenset({
+                    self._drone_by_id(state, m.drone_id).current_zone,
+                    m.target,
+                })
+                for m in started
+            }
             if highlighted
             else set()
         )
@@ -57,10 +79,6 @@ class ConsoleRenderer(IRenderer):
         self._print_edges(state, highlight_edges)
         print()
         self._print_moves_line(moves, active=highlighted)
-
-    # ------------------------------------------------------------------ #
-    # Layout: BFS from start zone -> columns (levels)
-    # ------------------------------------------------------------------ #
 
     def _layout_columns(self, state: SimulationState) -> List[List[str]]:
         graph = state.graph
@@ -83,25 +101,29 @@ class ConsoleRenderer(IRenderer):
                 visited[name] = max_depth
 
         columns: List[List[str]] = []
-        for name, depth in sorted(visited.items(), key=lambda kv: (kv[1], kv[0])):
+        for name, depth in sorted(
+            visited.items(), key=lambda kv: (kv[1], kv[0])
+        ):
             while len(columns) <= depth:
                 columns.append([])
             columns[depth].append(name)
 
         return columns
 
-    # ------------------------------------------------------------------ #
-    # Zone grid
-    # ------------------------------------------------------------------ #
-
-    def _print_zone_grid(self, state: SimulationState, highlight_zones: Set[str]) -> None:
+    def _print_zone_grid(
+        self, state: SimulationState, highlight_zones: Set[str]
+    ) -> None:
         graph = state.graph
         columns = self._layout_columns(state)
         drones_by_zone = self._drones_by_zone(state)
 
         col_boxes: List[List[List[str]]] = [
             [
-                self._zone_box(graph.zones[name], drones_by_zone.get(name, []), name in highlight_zones)
+                self._zone_box(
+                    graph.zones[name],
+                    drones_by_zone.get(name, []),
+                    name in highlight_zones,
+                )
                 for name in col
             ]
             for col in columns
@@ -122,16 +144,29 @@ class ConsoleRenderer(IRenderer):
                 print(gap.join(pieces))
             print()
 
-    def _zone_box(self, zone, drones: List[Drone], highlighted: bool) -> List[str]:
+    def _zone_box(
+        self, zone, drones: List[Drone], highlighted: bool
+    ) -> List[str]:
         width = self.BOX_WIDTH
-        name = zone.name if len(zone.name) <= width - 2 else zone.name[: width - 5] + "..."
-        marker = {"restricted": "*", "priority": "!", "blocked": "#"}.get(zone.type.value, "")
+        name = (
+            zone.name
+            if len(zone.name) <= width - 2
+            else zone.name[: width - 5] + "..."
+        )
+        marker = {
+            "restricted": "*",
+            "priority": "!",
+            "blocked": "#",
+        }.get(zone.type.value, "")
 
         title = f" {name}{marker} ".center(width)
 
         occupancy = f"{len(drones)}/{zone.max_drones}"
         ids = ",".join(f"D{d.id}" for d in drones)
-        body_text = f" [{ids}] {occupancy} " if drones else f" (empty) {occupancy} "
+        body_text = (
+            f" [{ids}] {occupancy} " if drones
+            else f" (empty) {occupancy} "
+        )
         if len(body_text) > width:
             body_text = f" ({len(drones)} drones) {occupancy} "
         content_line = body_text.center(width)
@@ -147,11 +182,9 @@ class ConsoleRenderer(IRenderer):
 
         return [top, mid, bottom, border]
 
-    # ------------------------------------------------------------------ #
-    # Edges
-    # ------------------------------------------------------------------ #
-
-    def _print_edges(self, state: SimulationState, highlight_edges: Set[frozenset]) -> None:
+    def _print_edges(
+        self, state: SimulationState, highlight_edges: Set[frozenset]
+    ) -> None:
         graph = state.graph
         drones_in_flight = self._drones_in_flight_by_edge(state)
 
@@ -166,15 +199,18 @@ class ConsoleRenderer(IRenderer):
 
                 flying = drones_in_flight.get(key, [])
                 occupancy = len(flying)
-                tag = f" [{','.join('D' + str(d.id) for d in flying)}]" if flying else ""
+                tag = (
+                    f" [{','.join('D' + str(d.id) for d in flying)}]"
+                    if flying
+                    else ""
+                )
                 marker = "  <== MOVING NOW" if key in highlight_edges else ""
 
                 a, b = sorted(key)
-                print(f"  {a} <--({occupancy}/{edge.capacity})--> {b}{tag}{marker}")
-
-    # ------------------------------------------------------------------ #
-    # Moves / summary
-    # ------------------------------------------------------------------ #
+                print(
+                    f"  {a} <--({occupancy}/{edge.capacity})--> "
+                    f"{b}{tag}{marker}"
+                )
 
     def _print_moves_line(self, moves: List[Move], active: bool) -> None:
         started = [m for m in moves if m.action == DroneStatus.IN_TRANSIT]
@@ -187,15 +223,18 @@ class ConsoleRenderer(IRenderer):
         print(prefix + ", ".join(parts))
 
     def _print_summary(self, state: SimulationState) -> None:
-        delivered = [d for d in state.drones if d.status == DroneStatus.DELIVERED]
-        print(f"Delivered {len(delivered)}/{len(state.drones)} drones in {state.turn} turns.")
-
-    # ------------------------------------------------------------------ #
-    # Helpers
-    # ------------------------------------------------------------------ #
+        delivered = [
+            d for d in state.drones if d.status == DroneStatus.DELIVERED
+        ]
+        print(
+            f"Delivered {len(delivered)}/{len(state.drones)} drones "
+            f"in {state.turn} turns."
+        )
 
     @staticmethod
-    def _drones_by_zone(state: SimulationState) -> Dict[str, List[Drone]]:
+    def _drones_by_zone(
+        state: SimulationState,
+    ) -> Dict[str, List[Drone]]:
         result: Dict[str, List[Drone]] = {}
         for d in state.drones:
             if d.status in (DroneStatus.WAITING, DroneStatus.DELIVERED):
@@ -203,10 +242,15 @@ class ConsoleRenderer(IRenderer):
         return result
 
     @staticmethod
-    def _drones_in_flight_by_edge(state: SimulationState) -> Dict[frozenset, List[Drone]]:
+    def _drones_in_flight_by_edge(
+        state: SimulationState,
+    ) -> Dict[frozenset, List[Drone]]:
         result: Dict[frozenset, List[Drone]] = {}
         for d in state.drones:
-            if d.status == DroneStatus.IN_TRANSIT and d.current_edge_target is not None:
+            if (
+                d.status == DroneStatus.IN_TRANSIT
+                and d.current_edge_target is not None
+            ):
                 key = frozenset({d.current_zone, d.current_edge_target})
                 result.setdefault(key, []).append(d)
         return result
@@ -222,9 +266,3 @@ class ConsoleRenderer(IRenderer):
     def _clear_screen() -> None:
         os.system("cls" if os.name == "nt" else "clear")
         sys.stdout.flush()
-
-
-class PyGameRenderer(IRenderer):
-    @abstractmethod
-    def render(self, frames: List[Frame]) -> None:
-        pass

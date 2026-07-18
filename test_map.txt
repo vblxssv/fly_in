@@ -1,38 +1,11 @@
 # Easy Level 1: Simple linear path
-nb_drones: 3
+nb_drones: 1
 
-# ========
 
-start_hub: a 0 1
 
-hub: b 1 0 [zone=restricted]
-hub: c 1 1 
-hub: d 1 2 [zone=restricted]
 
-hub: e 2 0 
-hub: f 2 1 [zone=restricted]
-hub: g 2 2 [zone=restricted]
+start_hub: a 1 1
 
-hub: h 3 0 [zone=restricted]
-hub: k 3 1 
-hub: l 3 2 [zone=restricted]
+end_hub: d 4 1
 
-end_hub: o 4 1
-
-connection: a-b
-connection: a-c
 connection: a-d
-
-connection: b-e
-connection: b-f
-connection: c-f
-connection: d-g
-connection: e-h
-connection: f-k
-connection: f-g
-connection: g-k
-connection: g-l
-
-connection: h-o
-connection: k-o
-connection: l-o
