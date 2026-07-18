@@ -33,6 +33,8 @@ class ZoneColor(str, Enum):
     VIOLET = 'violet'
     CRIMSON = 'crimson'
     RAINBOW = 'rainbow'
+    CYAN = "cyan"
+    YELLOW = "yellow"
     NONE = "none"
 
 

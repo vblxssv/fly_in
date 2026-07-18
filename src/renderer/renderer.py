@@ -5,17 +5,6 @@ from typing import List
 
 class IRenderer(ABC):
     @abstractmethod
-    def render(self, frames: List[Frame]) -> None:
-        pass
-
-
-class ConsoleRenderer(IRenderer):
-    @abstractmethod
-    def render(self, frames: List[Frame]) -> None:
-        pass
-
-
-class PyGameRenderer(IRenderer):
-    @abstractmethod
-    def render(self, frames: List[Frame]) -> None:
+    def play(self, frames: List[Frame]) -> None:
+        """Play back a full recorded simulation, frame by frame."""
         pass

@@ -1,6 +1,7 @@
 from src.simulation_engine.simulation_engine import SimulationEngine
 from src.algorithm.algorithm import Dijkstra
-from src.renderer.renderer import ConsoleRenderer
+from src.renderer.console_renderer import ConsoleRenderer
+from src.renderer.pygame_renderer import PyGameRenderer
 from src.models.state import SimulationState
 from src.models.factory import GraphFactory, DroneFactory
 from src.parser.parser import Parser
@@ -24,8 +25,7 @@ class Application:
         state = SimulationState(graph=graph, drones=drones, turn=0)
 
         engine = SimulationEngine(algorithm=Dijkstra(),
-                                  renderer=ConsoleRenderer(),
                                   state=state)
         frames: List[Frame] = engine.run()
-        for frame in frames:
-            print(frame)
+        renderer = PyGameRenderer()
+        renderer.play(frames)

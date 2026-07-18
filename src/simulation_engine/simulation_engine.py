@@ -1,5 +1,4 @@
 from src.algorithm.algorithm import IAlgorithm
-from src.renderer.renderer import IRenderer
 from src.models.state import SimulationState
 from src.models.frame import Frame
 from typing import List, Dict
@@ -9,10 +8,9 @@ from math import ceil
 
 
 class SimulationEngine:
-    def __init__(self, algorithm: IAlgorithm, renderer: IRenderer,
+    def __init__(self, algorithm: IAlgorithm,
                  state: SimulationState) -> None:
         self.algorithm = algorithm
-        self.renderer = renderer
         self.state = state
 
     def _snapshot(self) -> SimulationState:
@@ -120,5 +118,5 @@ class SimulationEngine:
             frames.append(Frame(state=self._snapshot(), moves=moves))
             self._apply_moves(moves)
             self.state.turn += 1
-
+        frames.append(Frame(state=self._snapshot(), moves=[]))
         return frames

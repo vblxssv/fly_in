@@ -10,7 +10,7 @@ hub: c 1 1
 hub: d 1 2 [zone=restricted]
 
 hub: e 2 0 
-hub: f 2 1 
+hub: f 2 1 [zone=restricted]
 hub: g 2 2 [zone=restricted]
 
 hub: h 3 0 [zone=restricted]
