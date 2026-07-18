@@ -12,7 +12,17 @@ class DroneStatus(str, Enum):
 class Drone(BaseModel):
     id: int
     status: DroneStatus = DroneStatus.WAITING
-    current_zone: str | None = None
+    current_zone: str
     current_edge_target: str | None = None
     turns_remaining: int = 0
     path: List[str] = []
+
+    def get_next_zone(self) -> str:
+        if len(self.path) == 0:
+            raise ValueError("Empty path")
+
+        idx: int = self.path.index(self.current_zone)
+        if idx + 1 >= len(self.path):
+            raise ValueError("Already at end of path")
+
+        return self.path[idx + 1]

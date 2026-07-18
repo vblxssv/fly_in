@@ -23,6 +23,12 @@ class Graph:
         self.adjacency_list[target].append(Edge(target=source,
                                                 capacity=capacity))
 
+    def get_edge(self, target: str, source: str) -> Edge:
+        for edge in self.adjacency_list.get(source, []):
+            if edge.target == target:
+                return edge
+        raise ValueError(f"No edge from {source} to {target}")
+
     def __repr__(self) -> str:
         lines = ["Graph Status:"]
         lines.append(f"  Total Zones: {len(self.zones)}")

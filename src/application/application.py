@@ -4,6 +4,8 @@ from src.renderer.renderer import ConsoleRenderer
 from src.models.state import SimulationState
 from src.models.factory import GraphFactory, DroneFactory
 from src.parser.parser import Parser
+from typing import List
+from src.models.frame import Frame
 
 
 class Application:
@@ -24,4 +26,6 @@ class Application:
         engine = SimulationEngine(algorithm=Dijkstra(),
                                   renderer=ConsoleRenderer(),
                                   state=state)
-        engine.run()
+        frames: List[Frame] = engine.run()
+        for frame in frames:
+            print(frame)

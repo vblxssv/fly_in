@@ -9,6 +9,15 @@ class ZoneType(str, Enum):
     RESTRICTED = "restricted"
     PRIORITY = "priority"
 
+    @property
+    def cost(self) -> float:
+        return {
+            ZoneType.NORMAL: 1.0,
+            ZoneType.RESTRICTED: 2.0,
+            ZoneType.PRIORITY: 0.99,
+            ZoneType.BLOCKED: float("inf"),
+        }[self]
+
 
 class ZoneColor(str, Enum):
     RED = "red"
