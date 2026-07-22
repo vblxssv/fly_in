@@ -1,7 +1,7 @@
 from src.models.zone import Zone
 from src.models.graph import Graph
 from src.models.drone import Drone, DroneStatus
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 
 class GraphFactory:
@@ -38,9 +38,12 @@ class GraphFactory:
 
 class DroneFactory:
     @staticmethod
-    def create_drones(amount: int, start_zone: str) -> List[Drone]:
-        drones = [
-            Drone(id=i, status=DroneStatus.WAITING, current_zone=start_zone)
+    def create_drones(amount: int, start_zone: str) -> Dict[int, Drone]:
+        return {
+            i: Drone(
+                id=i,
+                status=DroneStatus.WAITING,
+                current_zone=start_zone
+            )
             for i in range(1, amount + 1)
-        ]
-        return drones
+        }

@@ -11,7 +11,8 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except (OSError, ValidationError, ValueError, IndexError) as e:
+    except (OSError, ValidationError, ValueError,
+            IndexError, AttributeError) as e:
         print(f"Error: {e}")
     except KeyboardInterrupt:
         print("\nInterrupted")

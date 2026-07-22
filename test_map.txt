@@ -2,10 +2,11 @@
 nb_drones: 1
 
 
+start_hub: start 1 1
 
+hub: mid 2 1 
 
-start_hub: a 1 1
+end_hub: end 3 1
 
-end_hub: d 4 1
-
-connection: a-d
+connection: start-mid
+connection: mid-end

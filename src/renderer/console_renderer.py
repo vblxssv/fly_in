@@ -1,13 +1,15 @@
+from collections import deque
 import os
 import sys
 import time
-from collections import deque
+import subprocess
 from typing import Dict, List, Optional, Set
 
-from src.models.state import SimulationState
-from src.models.move import Move
 from src.models.drone import Drone, DroneStatus
 from src.models.frame import Frame
+from src.models.move import Move
+from src.models.zone import Zone
+from src.models.state import SimulationState
 from src.renderer.renderer import IRenderer
 
 
@@ -57,17 +59,8 @@ class ConsoleRenderer(IRenderer):
         highlighted: bool,
     ) -> None:
         started = [m for m in moves if m.action == DroneStatus.IN_TRANSIT]
-        highlight_zones = (
-            {m.target for m in started} if highlighted else set()
-        )
-        highlight_edges = (
-            {
-                frozenset({
-                    self._drone_by_id(state, m.drone_id).current_zone,
-                    m.target,
-                })
-                for m in started
-            }
+        highlight_zones: Set[str] = (
+            {m.target for m in started}
             if highlighted
             else set()
         )
@@ -75,8 +68,6 @@ class ConsoleRenderer(IRenderer):
         self._clear_screen()
         print(f"=== Turn {state.turn}  (frame {label}) ===\n")
         self._print_zone_grid(state, highlight_zones)
-        print()
-        self._print_edges(state, highlight_edges)
         print()
         self._print_moves_line(moves, active=highlighted)
 
@@ -131,11 +122,11 @@ class ConsoleRenderer(IRenderer):
 
         max_rows = max((len(c) for c in col_boxes), default=0)
         gap = " " * self.COL_GAP
-        box_height = 4
+        box_height = 3  # Вернули корректную высоту (верх, середина, низ)
 
         for row in range(max_rows):
             for line_idx in range(box_height):
-                pieces = []
+                pieces: List[str] = []
                 for boxes in col_boxes:
                     if row < len(boxes):
                         pieces.append(boxes[row][line_idx])
@@ -145,7 +136,7 @@ class ConsoleRenderer(IRenderer):
             print()
 
     def _zone_box(
-        self, zone, drones: List[Drone], highlighted: bool
+        self, zone: Zone, drones: List[Drone], highlighted: bool
     ) -> List[str]:
         width = self.BOX_WIDTH
         name = (
@@ -161,56 +152,15 @@ class ConsoleRenderer(IRenderer):
 
         title = f" {name}{marker} ".center(width)
 
-        occupancy = f"{len(drones)}/{zone.max_drones}"
-        ids = ",".join(f"D{d.id}" for d in drones)
-        body_text = (
-            f" [{ids}] {occupancy} " if drones
-            else f" (empty) {occupancy} "
-        )
-        if len(body_text) > width:
-            body_text = f" ({len(drones)} drones) {occupancy} "
-        content_line = body_text.center(width)
-
         corner = "*" if highlighted else "+"
         top = corner + "-" * width + corner
         mid = "|" + title + "|"
-        bottom = "|" + content_line + "|"
-        border = corner + "-" * width + corner
+        bottom = corner + "-" * width + corner  # Восстановили нижнюю границу
 
         if highlighted:
             mid = "|" + title[:-2] + "<<|"
 
-        return [top, mid, bottom, border]
-
-    def _print_edges(
-        self, state: SimulationState, highlight_edges: Set[frozenset]
-    ) -> None:
-        graph = state.graph
-        drones_in_flight = self._drones_in_flight_by_edge(state)
-
-        print("Edges:")
-        seen: Set[frozenset] = set()
-        for source in sorted(graph.adjacency_list):
-            for edge in graph.adjacency_list[source]:
-                key = frozenset({source, edge.target})
-                if key in seen:
-                    continue
-                seen.add(key)
-
-                flying = drones_in_flight.get(key, [])
-                occupancy = len(flying)
-                tag = (
-                    f" [{','.join('D' + str(d.id) for d in flying)}]"
-                    if flying
-                    else ""
-                )
-                marker = "  <== MOVING NOW" if key in highlight_edges else ""
-
-                a, b = sorted(key)
-                print(
-                    f"  {a} <--({occupancy}/{edge.capacity})--> "
-                    f"{b}{tag}{marker}"
-                )
+        return [top, mid, bottom]
 
     def _print_moves_line(self, moves: List[Move], active: bool) -> None:
         started = [m for m in moves if m.action == DroneStatus.IN_TRANSIT]
@@ -224,7 +174,8 @@ class ConsoleRenderer(IRenderer):
 
     def _print_summary(self, state: SimulationState) -> None:
         delivered = [
-            d for d in state.drones if d.status == DroneStatus.DELIVERED
+            d for d in state.drones.values()
+            if d.status == DroneStatus.DELIVERED
         ]
         print(
             f"Delivered {len(delivered)}/{len(state.drones)} drones "
@@ -236,7 +187,7 @@ class ConsoleRenderer(IRenderer):
         state: SimulationState,
     ) -> Dict[str, List[Drone]]:
         result: Dict[str, List[Drone]] = {}
-        for d in state.drones:
+        for d in state.drones.values():
             if d.status in (DroneStatus.WAITING, DroneStatus.DELIVERED):
                 result.setdefault(d.current_zone, []).append(d)
         return result
@@ -244,9 +195,9 @@ class ConsoleRenderer(IRenderer):
     @staticmethod
     def _drones_in_flight_by_edge(
         state: SimulationState,
-    ) -> Dict[frozenset, List[Drone]]:
-        result: Dict[frozenset, List[Drone]] = {}
-        for d in state.drones:
+    ) -> Dict[frozenset[str], List[Drone]]:
+        result: Dict[frozenset[str], List[Drone]] = {}
+        for d in state.drones.values():
             if (
                 d.status == DroneStatus.IN_TRANSIT
                 and d.current_edge_target is not None
@@ -257,12 +208,12 @@ class ConsoleRenderer(IRenderer):
 
     @staticmethod
     def _drone_by_id(state: SimulationState, drone_id: int) -> Drone:
-        for d in state.drones:
-            if d.id == drone_id:
-                return d
+        if drone_id in state.drones:
+            return state.drones[drone_id]
         raise ValueError(f"No drone with id {drone_id}")
 
     @staticmethod
     def _clear_screen() -> None:
-        os.system("cls" if os.name == "nt" else "clear")
+        command = "cls" if os.name == "nt" else "clear"
+        subprocess.run(command, shell=True)
         sys.stdout.flush()

@@ -45,7 +45,7 @@ class Dijkstra(IAlgorithm):
                 if next_zone.type == ZoneType.BLOCKED:
                     continue
 
-                new_dist = current_dist + next_zone.type.cost
+                new_dist = current_dist + next_zone.type.priority
 
                 if new_dist < distances[edge.target]:
                     distances[edge.target] = new_dist

@@ -18,11 +18,11 @@ class SimulationEngine:
 
     def _all_delivered(self) -> bool:
         return all(drone.status == DroneStatus.DELIVERED
-                   for drone in self.state.drones)
+                   for drone in self.state.drones.values())
 
     def _get_zone_occupancy(self, zone: str) -> int:
         return sum(
-            1 for d in self.state.drones
+            1 for d in self.state.drones.values()
             if d.status == DroneStatus.WAITING and d.current_zone == zone
         )
 
@@ -30,7 +30,7 @@ class SimulationEngine:
         key = frozenset({source, target})
         return sum(
             1
-            for d in self.state.drones
+            for d in self.state.drones.values()
             if d.status == DroneStatus.IN_TRANSIT
             and d.current_edge_target is not None
             and frozenset({d.current_zone, d.current_edge_target}) == key
@@ -42,7 +42,7 @@ class SimulationEngine:
         moves: List[Move] = []
 
         # ========= Основной цикл ==========
-        for drone in self.state.drones:
+        for drone in self.state.drones.values():
             if drone.status != DroneStatus.WAITING:
                 continue
 
@@ -72,14 +72,16 @@ class SimulationEngine:
         zone = self.state.graph.zones[target]
         drone.status = DroneStatus.IN_TRANSIT
         drone.current_edge_target = target
-        drone.turns_remaining = max(1, ceil(zone.type.cost))
+        drone.turns_remaining = max(1, ceil(zone.type.priority))
 
     def _progress_transit(self, drone: Drone) -> None:
         if drone.turns_remaining > 0:
             drone.turns_remaining -= 1
 
         if drone.turns_remaining <= 0:
-            target: str = drone.current_edge_target
+            target = drone.current_edge_target
+            if target is None:
+                raise ValueError("There is no drone target zone")
             zone = self.state.graph.zones[target]
 
             if self._get_zone_occupancy(target) < zone.max_drones:
@@ -94,28 +96,20 @@ class SimulationEngine:
     def _apply_moves(self, moves: List[Move]) -> None:
         moves_by_drone = {m.drone_id: m for m in moves}
 
-        for drone in self.state.drones:
+        for drone in self.state.drones.values():
             if drone.status == DroneStatus.IN_TRANSIT:
                 self._progress_transit(drone)
             elif drone.status == DroneStatus.WAITING:
                 move = moves_by_drone.get(drone.id)
                 if move is not None and move.action == DroneStatus.IN_TRANSIT:
                     self._start_transit(drone, move.target)
-                    # A transit that starts THIS turn must also spend its
-                    # first tick THIS turn, so that every official engine
-                    # turn (start or continuation) advances a transit by
-                    # exactly one tick. Without this, a 1-tick (normal
-                    # zone) transit would need 2 turns to resolve instead
-                    # of 1, and the renderer (which assumes 1 official
-                    # turn == 1 tick) would show teleporting/duplicated
-                    # animation instead of a smooth move.
                     self._progress_transit(drone)
 
     def run(self) -> List[Frame]:
         golden_path: List[str] = self.algorithm.calculate_path(
             self.state, self.state.graph.start)
 
-        for d in self.state.drones:
+        for d in self.state.drones.values():
             d.path = golden_path
 
         frames: List[Frame] = []
