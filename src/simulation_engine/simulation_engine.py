@@ -1,14 +1,18 @@
 from src.models import DroneStatus, Drone, Move, Frame, SimulationState
 from src.algorithm import IAlgorithm
+from src.logger import ILogger
+
 from typing import List, Dict, Set, FrozenSet
 from math import ceil
 
 
 class SimulationEngine:
     def __init__(self, algorithm: IAlgorithm,
-                 state: SimulationState) -> None:
+                 state: SimulationState,
+                 logger: ILogger) -> None:
         self.algorithm = algorithm
         self.state = state
+        self.logger = logger
 
     def _snapshot(self) -> SimulationState:
         return self.state.model_copy(deep=True)
@@ -163,6 +167,23 @@ class SimulationEngine:
                     self._start_transit(drone, move.target)
                     self._progress_transit(drone)
 
+    def _augment_with_flying_drones(self, moves: List[Move]) -> List[Move]:
+        already_present = {m.drone_id for m in moves}
+        augmented = list(moves)
+
+        for drone in self.state.drones.values():
+            if drone.id in already_present:
+                continue
+            if drone.status == DroneStatus.IN_TRANSIT and \
+                    drone.current_edge_target is not None:
+                augmented.append(Move(
+                    drone_id=drone.id,
+                    action=DroneStatus.IN_TRANSIT,
+                    target=drone.current_edge_target,
+                ))
+
+        return augmented
+
     def run(self) -> List[Frame]:
         golden_path: List[str] = self.algorithm.calculate_path(
             self.state, self.state.graph.start)
@@ -175,9 +196,18 @@ class SimulationEngine:
 
         while not self._all_delivered() and self.state.turn < MAX_TURNS:
             moves = self._calculate_moves()
-            frames.append(Frame(state=self._snapshot(), moves=moves))
+            log_moves = self._augment_with_flying_drones(moves)
+
+            state_before = self._snapshot()
+            frames.append(Frame(state=state_before, moves=moves))
             self._apply_moves(moves)
+            state_after = self._snapshot()
+
+            self.logger.log_turn(log_moves, state_before, state_after)
+
             self.state.turn += 1
+
         frames.append(Frame(state=self._snapshot(), moves=[]))
+        self.logger.finalize()
         print(f"Total turns: {self.state.turn}")
         return frames

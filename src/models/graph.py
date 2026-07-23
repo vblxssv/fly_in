@@ -2,14 +2,14 @@ from .zone import Zone
 from .edge import Edge
 
 from typing import Dict, List
+from pydantic import BaseModel, Field
 
 
-class Graph:
-    def __init__(self) -> None:
-        self.zones: Dict[str, Zone] = {}
-        self.adjacency_list: Dict[str, List[Edge]] = {}
-        self.start: str = ""
-        self.end: str = ""
+class Graph(BaseModel):
+    zones: Dict[str, Zone] = Field(default_factory=dict)
+    adjacency_list: Dict[str, List["Edge"]] = Field(default_factory=dict)
+    start: str = ""
+    end: str = ""
 
     def add_zone(self, zone: Zone) -> None:
         self.zones[zone.name] = zone
@@ -24,7 +24,7 @@ class Graph:
         self.adjacency_list[target].append(Edge(target=source,
                                                 capacity=capacity))
 
-    def get_edge(self, target: str, source: str) -> Edge:
+    def get_edge(self, target: str, source: str) -> "Edge":
         for edge in self.adjacency_list.get(source, []):
             if edge.target == target:
                 return edge

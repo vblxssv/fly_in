@@ -18,7 +18,6 @@ class _SimulationWindow(arcade.Window):
     def __init__(self, frames: List[Frame]) -> None:
         super().__init__(1600, 900, "Fly-in simulation")
         arcade.set_background_color((228, 247, 247, 0))
-        # arcade.set_background_color(arcade.color.BLACK)
 
         # Data
         self._frames = frames

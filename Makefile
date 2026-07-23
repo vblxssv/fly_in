@@ -3,6 +3,7 @@
 MAP ?= maps/challenger/01_the_impossible_dream.txt
 ALGORITHM ?= dijkstra
 RENDERER ?= arcade
+LOGGER ?= file
 
 VENV = .venv
 PYTHON = $(VENV)/bin/python3
@@ -14,7 +15,8 @@ venv:
 	$(PIP) install -r requirements.txt
 
 run: venv
-	$(PYTHON) main.py --map $(MAP) --algorithm $(ALGORITHM) --renderer $(RENDERER)
+	$(PYTHON) main.py --map $(MAP) --algorithm $(ALGORITHM) --renderer $(RENDERER) \
+		--logger $(LOGGER)
 
 lint: venv
 	$(VENV)/bin/flake8 src/
