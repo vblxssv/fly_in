@@ -1,5 +1,5 @@
-import re
 from typing import Dict, Any
+import re
 
 
 class Parser:

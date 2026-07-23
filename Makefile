@@ -1,10 +1,10 @@
 .PHONY: run clean lint
 
-MAP ?= test_map.txt
+MAP ?= maps/challenger/01_the_impossible_dream.txt
 ALGORITHM ?= dijkstra
 RENDERER ?= arcade
 
-VENV = venv
+VENV = .venv
 PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
 
@@ -22,4 +22,5 @@ lint: venv
 
 clean:
 	rm -rf $(VENV)
+	rm -rf .mypy_cache
 	find . -type d -name "__pycache__" -exec rm -rf {} +

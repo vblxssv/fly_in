@@ -1,12 +1,10 @@
-from src.simulation_engine.simulation_engine import SimulationEngine
-from src.algorithm.algorithm import Dijkstra
-from src.renderer.arcade_renderer import ArcadeRenderer
-from src.renderer.console_renderer import ConsoleRenderer
-from src.models.state import SimulationState
-from src.models.factory import GraphFactory, DroneFactory
-from src.parser.parser import Parser
+from src.models import SimulationState, GraphFactory, DroneFactory, Frame
+from src.renderer import ConsoleRenderer, ArcadeRenderer
+from src.simulation_engine import SimulationEngine
+from src.algorithm import Dijkstra
+from src.parser import Parser
+
 from typing import List, Dict, Any
-from src.models.frame import Frame
 import argparse
 
 

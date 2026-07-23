@@ -1,16 +1,12 @@
-from collections import deque
-import os
-import sys
-import time
-import subprocess
-from typing import Dict, List, Optional, Set
+from src.models import Drone, DroneStatus, Frame, Move, SimulationState, Zone
+from .renderer import IRenderer
 
-from src.models.drone import Drone, DroneStatus
-from src.models.frame import Frame
-from src.models.move import Move
-from src.models.zone import Zone
-from src.models.state import SimulationState
-from src.renderer.renderer import IRenderer
+from typing import Dict, List, Optional, Set
+from collections import deque
+import subprocess
+import time
+import sys
+import os
 
 
 class ConsoleRenderer(IRenderer):

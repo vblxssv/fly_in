@@ -1,5 +1,6 @@
+from src.models import Frame
+
 from abc import ABC, abstractmethod
-from src.models.frame import Frame
 from typing import List
 
 

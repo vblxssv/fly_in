@@ -1,5 +1,6 @@
-from src.models.state import SimulationState
-from src.models.move import Move
+from .state import SimulationState
+from .move import Move
+
 from dataclasses import dataclass
 from typing import List
 

@@ -1,6 +1,6 @@
+from pydantic import BaseModel, Field
 from typing import Tuple
 from enum import Enum
-from pydantic import BaseModel, Field
 from math import ceil
 
 

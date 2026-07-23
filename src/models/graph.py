@@ -1,5 +1,6 @@
-from src.models.zone import Zone
-from src.models.edge import Edge
+from .zone import Zone
+from .edge import Edge
+
 from typing import Dict, List
 
 

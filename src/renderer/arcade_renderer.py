@@ -1,12 +1,11 @@
-import arcade
-from src.renderer.renderer import IRenderer
-from src.models.frame import Frame
-from src.models.graph import Graph
-from src.models.drone import Drone, DroneStatus
+from src.models import Drone, DroneStatus, Frame, Graph
+from .animation_drone import AnimDrone
+from .renderer import IRenderer
+
 from typing import List, Dict, Tuple, Set
-from src.renderer.animation_drone import AnimDrone
-import math
+import arcade
 import random
+import math
 
 
 class ArcadeRenderer(IRenderer):
@@ -28,7 +27,7 @@ class _SimulationWindow(arcade.Window):
         # Time
         self._turn_time = 0.5
         self._frame_index = 0
-        self._elapsed_time = 0
+        self._elapsed_time = 0.0
 
         # Visual
         self._ZONE_RADIUS = 15

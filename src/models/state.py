@@ -1,7 +1,8 @@
-from src.models.graph import Graph
-from src.models.drone import Drone
-from pydantic import BaseModel, ConfigDict
+from .graph import Graph
+from .drone import Drone
 from typing import Dict
+
+from pydantic import BaseModel, ConfigDict
 
 
 class SimulationState(BaseModel):

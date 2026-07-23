@@ -1,9 +1,6 @@
-from src.algorithm.algorithm import IAlgorithm
-from src.models.state import SimulationState
-from src.models.frame import Frame
+from src.models import DroneStatus, Drone, Move, Frame, SimulationState
+from src.algorithm import IAlgorithm
 from typing import List, Dict
-from src.models.move import Move
-from src.models.drone import DroneStatus, Drone
 from math import ceil
 
 
@@ -41,7 +38,6 @@ class SimulationEngine:
         graph = self.state.graph
         moves: List[Move] = []
 
-        # ========= Основной цикл ==========
         for drone in self.state.drones.values():
             if drone.status != DroneStatus.WAITING:
                 continue
@@ -65,7 +61,6 @@ class SimulationEngine:
                 moves.append(Move(drone_id=drone.id,
                                   action=DroneStatus.WAITING,
                                   target=drone.current_zone))
-        # ==================================
         return moves
 
     def _start_transit(self, drone: Drone, target: str) -> None:

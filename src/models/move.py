@@ -1,5 +1,6 @@
+from .drone import DroneStatus
+
 from pydantic import BaseModel
-from src.models.drone import DroneStatus
 
 
 class Move(BaseModel):

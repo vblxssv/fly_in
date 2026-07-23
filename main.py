@@ -1,6 +1,5 @@
+from src.application import Application, CLI
 from pydantic import ValidationError
-from src.application.application import Application
-from src.application.cli import CLI
 
 
 def main() -> None:

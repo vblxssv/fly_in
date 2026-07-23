@@ -1,6 +1,6 @@
-from enum import Enum
 from pydantic import BaseModel
 from typing import List
+from enum import Enum
 
 
 class DroneStatus(str, Enum):
