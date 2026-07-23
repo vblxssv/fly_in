@@ -1,6 +1,6 @@
 from src.models import DroneStatus, Drone, Move, Frame, SimulationState
 from src.algorithm import IAlgorithm
-from typing import List, Dict
+from typing import List, Dict, Set, FrozenSet
 from math import ceil
 
 
@@ -33,8 +33,60 @@ class SimulationEngine:
             and frozenset({d.current_zone, d.current_edge_target}) == key
         )
 
+    def _congested_edges(
+        self, reserved: Dict[frozenset, int]
+    ) -> Set[FrozenSet[str]]:
+        congested: Set[FrozenSet[str]] = set()
+        graph = self.state.graph
+        for source, edges in graph.adjacency_list.items():
+            for edge in edges:
+                key = frozenset({source, edge.target})
+                occ = self._get_edge_occupancy(source, edge.target)
+                occ += reserved.get(key, 0)
+                if occ >= edge.capacity:
+                    congested.add(key)
+        return congested
+
+    def _path_cost(self, path: List[str]) -> float:
+        graph = self.state.graph
+        total = 0.0
+        for zone_name in path[1:]:
+            total += graph.zones[zone_name].type.priority
+        return total
+
+
+    def _try_replan(
+        self, drone: Drone, reserved_edges: Dict[frozenset, int]
+    ) -> str | None:
+        graph = self.state.graph
+        blocked = self._congested_edges(reserved_edges)
+
+        new_tail = self.algorithm.calculate_path(
+            self.state, drone.current_zone, blocked
+        )
+        if not new_tail or len(new_tail) < 2:
+            return None
+
+        idx = drone.path.index(drone.current_zone)
+        candidate_path = drone.path[:idx] + new_tail
+
+        if candidate_path == drone.path:
+            return None
+
+        next_zone = new_tail[1]
+        edge_key = frozenset({drone.current_zone, next_zone})
+        capacity = graph.get_edge(next_zone, drone.current_zone).capacity
+        occ = self._get_edge_occupancy(drone.current_zone, next_zone)
+        occ += reserved_edges.get(edge_key, 0)
+
+        if occ >= capacity:
+            return None 
+
+        drone.path = candidate_path
+        return next_zone
+
     def _calculate_moves(self) -> List[Move]:
-        reserved_edges: Dict[frozenset[str], int] = {}  # edge - drones
+        reserved_edges: Dict[frozenset[str], int] = {}
         graph = self.state.graph
         moves: List[Move] = []
 
@@ -48,19 +100,29 @@ class SimulationEngine:
                 continue
 
             edge_key = frozenset({drone.current_zone, next_zone})
-            if (graph.get_edge(drone.current_zone, next_zone).capacity
-                > self._get_edge_occupancy(drone.current_zone, next_zone) +
-                    reserved_edges.get(edge_key, 0)):
+            capacity = graph.get_edge(drone.current_zone, next_zone).capacity
+            occupied = (self._get_edge_occupancy(drone.current_zone, next_zone)
+                        + reserved_edges.get(edge_key, 0))
 
+            if capacity > occupied:
                 reserved_edges[edge_key] = reserved_edges.get(edge_key, 0) + 1
                 moves.append(Move(drone_id=drone.id,
                                   action=DroneStatus.IN_TRANSIT,
                                   target=next_zone))
-            else:
-                # ВОТ СЮДА РЕПЛАНИНГ ВЬЕБАТЬ ПОТОМ
+                continue
+
+            replanned_target = self._try_replan(drone, reserved_edges)
+            if replanned_target is not None:
+                key = frozenset({drone.current_zone, replanned_target})
+                reserved_edges[key] = reserved_edges.get(key, 0) + 1
                 moves.append(Move(drone_id=drone.id,
-                                  action=DroneStatus.WAITING,
-                                  target=drone.current_zone))
+                                  action=DroneStatus.IN_TRANSIT,
+                                  target=replanned_target))
+                continue
+
+            moves.append(Move(drone_id=drone.id,
+                              action=DroneStatus.WAITING,
+                              target=drone.current_zone))
         return moves
 
     def _start_transit(self, drone: Drone, target: str) -> None:
@@ -108,7 +170,6 @@ class SimulationEngine:
             d.path = golden_path
 
         frames: List[Frame] = []
-
         MAX_TURNS = 1000
 
         while not self._all_delivered() and self.state.turn < MAX_TURNS:

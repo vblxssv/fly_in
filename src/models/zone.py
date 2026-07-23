@@ -29,6 +29,7 @@ class ZoneColor(str, Enum):
     GREEN = "green"
     BLUE = "blue"
     PURPLE = "purple"
+    MAGENTA = 'magenta'
     BLACK = "black"
     BROWN = "brown"
     ORANGE = "orange"
@@ -40,6 +41,7 @@ class ZoneColor(str, Enum):
     RAINBOW = 'rainbow'
     CYAN = "cyan"
     YELLOW = "yellow"
+    LIME = 'lime'
     NONE = "none"
 
     @property
@@ -61,6 +63,8 @@ class ZoneColor(str, Enum):
             ZoneColor.YELLOW: (230, 220, 60),
             ZoneColor.RAINBOW: (255, 105, 180),
             ZoneColor.NONE: (70, 130, 200),
+            ZoneColor.LIME: (191, 255, 0),
+            ZoneColor.MAGENTA: (255, 0, 255)
         }[self]
 
 

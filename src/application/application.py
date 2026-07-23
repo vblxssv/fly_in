@@ -25,4 +25,5 @@ class Application:
 
     def run(self) -> None:
         frames: List[Frame] = self._engine.run()
+        print(f"Total turns: {len(frames)}")
         self._renderer.play(frames)
