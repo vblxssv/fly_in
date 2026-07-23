@@ -1,6 +1,9 @@
 .PHONY: run clean lint
 
 MAP ?= test_map.txt
+ALGORITHM ?= dijkstra
+RENDERER ?= arcade
+
 VENV = venv
 PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
@@ -11,7 +14,7 @@ venv:
 	$(PIP) install -r requirements.txt
 
 run: venv
-	$(PYTHON) main.py $(MAP)
+	$(PYTHON) main.py --map $(MAP) --algorithm $(ALGORITHM) --renderer $(RENDERER)
 
 lint: venv
 	$(VENV)/bin/flake8 src/

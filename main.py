@@ -1,10 +1,10 @@
 from pydantic import ValidationError
 from src.application.application import Application
-import sys
+from src.application.cli import CLI
 
 
 def main() -> None:
-    app = Application(sys.argv[1])
+    app = Application(CLI.parse_args())
     app.run()
 
 

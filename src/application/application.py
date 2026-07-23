@@ -7,16 +7,23 @@ from src.models.factory import GraphFactory, DroneFactory
 from src.parser.parser import Parser
 from typing import List, Dict, Any
 from src.models.frame import Frame
+import argparse
 
 
 class Application:
-    def __init__(self, map_path: str) -> None:
-        content: Dict[str, Any] = Parser.parse(map_path)
+    def __init__(self, args: argparse.Namespace) -> None:
+        content: Dict[str, Any] = Parser.parse(args.map)
         graph = GraphFactory.build(content)
         drones = DroneFactory.create_drones(content["nb_drones"], graph.start)
         state = SimulationState(graph=graph, drones=drones, turn=0)
-        self._renderer = ArcadeRenderer()
-        self._engine = SimulationEngine(Dijkstra(), state)
+
+        algo = (Dijkstra()
+                if args.algorithm == "dijkstra" else Dijkstra())
+
+        self._renderer = (ConsoleRenderer()
+                          if args.renderer == "console" else ArcadeRenderer())
+
+        self._engine = SimulationEngine(algo, state)
 
     def run(self) -> None:
         frames: List[Frame] = self._engine.run()
