@@ -34,7 +34,7 @@ class SimulationEngine:
         )
 
     def _congested_edges(
-        self, reserved: Dict[frozenset, int]
+        self, reserved: Dict[FrozenSet[str], int]
     ) -> Set[FrozenSet[str]]:
         congested: Set[FrozenSet[str]] = set()
         graph = self.state.graph
@@ -54,9 +54,10 @@ class SimulationEngine:
             total += graph.zones[zone_name].type.priority
         return total
 
-
     def _try_replan(
-        self, drone: Drone, reserved_edges: Dict[frozenset, int]
+        self,
+        drone: Drone,
+        reserved_edges: Dict[FrozenSet[str], int]
     ) -> str | None:
         graph = self.state.graph
         blocked = self._congested_edges(reserved_edges)
@@ -80,7 +81,7 @@ class SimulationEngine:
         occ += reserved_edges.get(edge_key, 0)
 
         if occ >= capacity:
-            return None 
+            return None
 
         drone.path = candidate_path
         return next_zone
@@ -178,4 +179,5 @@ class SimulationEngine:
             self._apply_moves(moves)
             self.state.turn += 1
         frames.append(Frame(state=self._snapshot(), moves=[]))
+        print(f"Total turns: {self.state.turn}")
         return frames
