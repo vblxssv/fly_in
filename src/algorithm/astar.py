@@ -2,11 +2,11 @@ from src.models import ZoneType, SimulationState
 from .algorithm import IAlgorithm
 
 from heapq import heappop, heappush
-from typing import List, Set, FrozenSet, Optional, Dict
+from typing import Dict, List, Optional, Set, FrozenSet
 
 
 class AStar(IAlgorithm):
-    MIN_STEP_COST: float = ZoneType.PRIORITY.priority  # 0.99
+    MIN_STEP_COST = ZoneType.PRIORITY.priority
 
     def calculate_path(
         self,
@@ -21,69 +21,79 @@ class AStar(IAlgorithm):
         if start not in graph.zones or end not in graph.zones:
             return []
 
-        def heuristic(zone_name: str) -> float:
-            x1, y1 = graph.zones[zone_name].pos
+        def heuristic(zone: str) -> float:
+            x1, y1 = graph.zones[zone].pos
             x2, y2 = graph.zones[end].pos
-            dist = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
-            return dist * self.MIN_STEP_COST
+            return ((((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5)
+                    * self.MIN_STEP_COST)
 
-        g_score: Dict[str, float] = {z: float("inf") for z in graph.zones}
+        g_score: Dict[str, float] = {
+            zone: float("inf") for zone in graph.zones
+        }
+        previous: Dict[str, Optional[str]] = {
+            zone: None for zone in graph.zones
+        }
+
         g_score[start] = 0.0
 
-        f_score: Dict[str, float] = {z: float("inf") for z in graph.zones}
-        f_score[start] = heuristic(start)
-
-        previous: Dict[str, Optional[str]] = {z: None for z in graph.zones}
-
         counter = 0
-        open_set: list[tuple[float, int, str]] = [(
-            f_score[start], counter, start)]
-        open_set_members: Set[str] = {start}
-        closed_set: Set[str] = set()
+        open_set: list[tuple[float, int, str]] = []
+        heappush(open_set, (heuristic(start), counter, start))
+
+        closed: Set[str] = set()
 
         while open_set:
-            _, _, current = heappop(open_set)
-            open_set_members.discard(current)
+            f_current, _, current = heappop(open_set)
+
+            if current in closed:
+                continue
+
+            expected_f = g_score[current] + heuristic(current)
+            if f_current > expected_f:
+                continue
 
             if current == end:
                 break
 
-            if current in closed_set:
-                continue
-            closed_set.add(current)
+            closed.add(current)
 
             for edge in graph.adjacency_list.get(current, []):
-                next_zone = graph.zones[edge.target]
-
-                if next_zone.type == ZoneType.BLOCKED:
-                    continue
 
                 if frozenset({current, edge.target}) in blocked_edges:
                     continue
 
-                if edge.target in closed_set:
+                zone = graph.zones[edge.target]
+
+                if zone.type == ZoneType.BLOCKED:
                     continue
 
-                tentative_g = g_score[current] + next_zone.type.priority
+                if edge.target in closed:
+                    continue
+
+                tentative_g = g_score[current] + zone.type.priority
 
                 if tentative_g < g_score[edge.target]:
-                    previous[edge.target] = current
                     g_score[edge.target] = tentative_g
-                    f_score[edge.target] = tentative_g + heuristic(edge.target)
+                    previous[edge.target] = current
 
-                    if edge.target not in open_set_members:
-                        counter += 1
-                        heappush(open_set,
-                                 (f_score[edge.target], counter, edge.target))
-                        open_set_members.add(edge.target)
+                    counter += 1
+                    heappush(
+                        open_set,
+                        (
+                            tentative_g + heuristic(edge.target),
+                            counter,
+                            edge.target,
+                        ),
+                    )
 
         if g_score[end] == float("inf"):
             return []
 
         path: List[str] = []
-        curr: Optional[str] = end
-        while curr:
-            path.append(curr)
-            curr = previous[curr]
+        current: Optional[str] = end
+
+        while current is not None:
+            path.append(current)
+            current = previous[current]
 
         return path[::-1]

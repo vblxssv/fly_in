@@ -1,20 +1,19 @@
-from src.models import SimulationState, GraphFactory, DroneFactory, Frame
-from src.renderer import ConsoleRenderer, ArcadeRenderer
-from src.simulation_engine import SimulationEngine
+from src.input import Parser, Validator, Line
+from src.models import StateFactory, SimulationState, Frame
 from src.algorithm import Dijkstra, AStar
-from src.parser import Parser
+from src.renderer import ArcadeRenderer, ConsoleRenderer
 from src.logger import ConsoleLogger, FileLogger
+from src.simulation_engine import SimulationEngine
 
-from typing import List, Dict, Any
+from typing import List
 import argparse
 
 
 class Application:
     def __init__(self, args: argparse.Namespace) -> None:
-        content: Dict[str, Any] = Parser.parse(args.map)
-        graph = GraphFactory.build(content)
-        drones = DroneFactory.create_drones(content["nb_drones"], graph.start)
-        state = SimulationState(graph=graph, drones=drones, turn=0)
+        content: List[Line] = Parser.parse(args.map)
+        Validator.validate(content)
+        state: SimulationState = StateFactory.build(content)
 
         algo = (Dijkstra()
                 if args.algorithm == "dijkstra" else AStar())

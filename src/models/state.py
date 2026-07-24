@@ -2,13 +2,13 @@ from .graph import Graph
 from .drone import Drone
 from typing import Dict
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 
 class SimulationState(BaseModel):
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True
-    )
+    # model_config = ConfigDict(
+    #     arbitrary_types_allowed=True
+    # )
 
     graph: Graph
     drones: Dict[int, Drone]

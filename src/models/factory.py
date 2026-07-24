@@ -1,45 +1,30 @@
 from .drone import Drone, DroneStatus
 from .graph import Graph
-from .zone import Zone
+from .zone import Zone, ZoneType, ZoneColor
+from .state import SimulationState
+from src.input import Line
 
-from typing import Dict, Any
+from typing import Dict, List
 
 
-class GraphFactory:
+class StateFactory:
     @staticmethod
-    def build(content: Dict[Any, Any]) -> Graph:
-        graph = Graph()
+    def _build_zone(line: Line) -> Zone:
+        name = line.arguments[1]
+        pos = (int(line.arguments[2]), int(line.arguments[3]))
 
-        for hub_data in content["hubs"]:
-            meta = hub_data["meta"]
-            zone = Zone(
-                name=hub_data["name"],
-                pos=(hub_data["coords"]["x"], hub_data["coords"]["y"]),
-                type=meta.get("zone", "normal"),
-                max_drones=int(meta.get("max_drones", 1)),
-                color=meta.get("color", "none"),
-            )
-            graph.add_zone(zone)
+        zone_type = ZoneType(line.meta.get("zone", ZoneType.NORMAL.value))
+        max_drones = int(line.meta.get("max_drones", 1))
+        color = ZoneColor(line.meta.get("color", ZoneColor.BLUE.value))
 
-            if hub_data["type"] == "start_hub":
-                graph.start = zone.name
-            elif hub_data["type"] == "end_hub":
-                graph.end = zone.name
+        return Zone(name=name,
+                    pos=pos,
+                    type=zone_type,
+                    max_drones=max_drones,
+                    color=color)
 
-        for conn_data in content["connections"]:
-            meta = conn_data["meta"]
-            graph.add_edge(
-                source=conn_data["from"],
-                target=conn_data["to"],
-                capacity=int(meta.get("max_link_capacity", 1)),
-            )
-
-        return graph
-
-
-class DroneFactory:
     @staticmethod
-    def create_drones(amount: int, start_zone: str) -> Dict[int, Drone]:
+    def _build_drones(amount: int, start_zone: str) -> Dict[int, Drone]:
         return {
             i: Drone(
                 id=i,
@@ -48,3 +33,33 @@ class DroneFactory:
             )
             for i in range(1, amount + 1)
         }
+
+    @staticmethod
+    def build(lines: List[Line]) -> SimulationState:
+        zone_lines: List[Line] = list(
+            filter(lambda line: line.arguments[0] in
+                   ["hub:", "start_hub:", "end_hub:"], lines))
+        connection_lines: List[Line] = list(
+            filter(lambda line: line.arguments[0] == "connection:", lines))
+        nb_drones_line: Line = next(
+            (line for line in lines if line.arguments[0] == "nb_drones:"))
+        nb_drones: int = int(nb_drones_line.arguments[1])
+
+        graph: Graph = Graph()
+        for line in zone_lines:
+            graph.add_zone(StateFactory._build_zone(line))
+            if line.arguments[0] == "start_hub:":
+                graph.start = line.arguments[1]
+            elif line.arguments[0] == "end_hub:":
+                graph.end = line.arguments[1]
+        for line in connection_lines:
+            source, target = line.arguments[1].split("-")
+            graph.add_edge(
+                source,
+                target,
+                int(line.meta.get("max_link_capacity", 1))
+            )
+        drones = StateFactory._build_drones(nb_drones, graph.start)
+        return SimulationState(graph=graph,
+                               turn=0,
+                               drones=drones)

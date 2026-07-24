@@ -12,6 +12,6 @@ if __name__ == "__main__":
         main()
     except (OSError, ValidationError, ValueError,
             IndexError, AttributeError) as e:
-        print(f"Error: {e}")
+        print(e)
     except KeyboardInterrupt:
         print("\nInterrupted")

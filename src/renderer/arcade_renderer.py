@@ -36,6 +36,10 @@ class _SimulationWindow(arcade.Window):
         self._start_turn(self._frames[0])
         self._is_paused = False
 
+        # UI
+        self._show_help = False
+        self._font_size = 18
+
     @property
     def finished(self) -> bool:
         return self._frame_index == len(self._frames) - 1
@@ -136,6 +140,10 @@ class _SimulationWindow(arcade.Window):
         self._draw_graph(frame.state.graph)
         self._draw_drones(list(frame.state.drones.values()))
 
+        self._draw_turn_info()
+        self._draw_metrics()
+        self._draw_help()
+
     def _update_frame_index(self, delta_time: float) -> None:
         self._elapsed_time += delta_time
 
@@ -179,10 +187,95 @@ class _SimulationWindow(arcade.Window):
         self._start_turn(self._frames[0])
         self._is_paused = False
 
+    def _draw_turn_info(self) -> None:
+        text = f"Turn: {self._frame_index} / {len(self._frames) - 1}"
+
+        arcade.draw_text(
+            text,
+            20,
+            self.height - 40,
+            arcade.color.BLACK,
+            self._font_size
+        )
+
+    def _total_drones(self) -> int:
+        return len(self._frames[0].state.drones)
+
+    def _average_turns(self) -> float:
+        delivered: Dict[int, int] = {}
+
+        for frame in self._frames:
+            for drone in frame.state.drones.values():
+                if (
+                    drone.status == DroneStatus.DELIVERED
+                    and drone.id not in delivered
+                ):
+                    delivered[drone.id] = frame.state.turn
+
+        if not delivered:
+            return 0.0
+
+        return sum(delivered.values()) / len(delivered)
+
+    def _moving_drones(self) -> int:
+        count = 0
+
+        for drone in self._frames[self._frame_index].state.drones.values():
+            if drone.status == DroneStatus.IN_TRANSIT:
+                count += 1
+
+        return count
+
+    def _draw_metrics(self) -> None:
+        lines = [
+            f"Drones: {self._total_drones()}",
+            f"Average turns/drone: {self._average_turns():.2f}",
+            f"Moving drones: {self._moving_drones()}",
+        ]
+
+        y = self.height - 80
+
+        for line in lines:
+            arcade.draw_text(
+                line,
+                20,
+                y,
+                arcade.color.BLACK,
+                self._font_size
+            )
+            y -= 25
+
+    def _draw_help(self) -> None:
+        if not self._show_help:
+            return
+
+        lines = [
+            "Controls:",
+            "SPACE - Pause/Resume",
+            "R - Reset",
+            "H - Toggle help",
+            "ESC - Exit",
+        ]
+
+        x = self.width - 250
+        y = self.height - 50
+
+        for line in lines:
+            arcade.draw_text(
+                line,
+                x,
+                y,
+                arcade.color.BLACK,
+                16
+            )
+            y -= 25
+
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         if symbol == arcade.key.ESCAPE:
             arcade.close_window()
         elif symbol == arcade.key.R:
             self.reset()
+        elif symbol == arcade.key.H:
+            self._show_help = not self._show_help
         elif symbol == arcade.key.SPACE:
             self._is_paused = not self._is_paused
