@@ -30,7 +30,7 @@ class Graph(BaseModel):
                 return edge
         raise ValueError(f"No edge from {source} to {target}")
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         lines = ["Graph Status:"]
         lines.append(f"  Total Zones: {len(self.zones)}")
 

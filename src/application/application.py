@@ -14,7 +14,6 @@ class Application:
         content: List[Line] = Parser.parse(args.map)
         Validator.validate(content)
         state: SimulationState = StateFactory.build(content)
-
         algo = (Dijkstra()
                 if args.algorithm == "dijkstra" else AStar())
 

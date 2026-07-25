@@ -87,6 +87,7 @@ class Validator:
     @staticmethod
     def _check_connection(
         line: Line,
+        seen_zones: Set[str],
         seen_connections: Set[Tuple[str, str]],
     ) -> None:
         line_number = line.line_number
@@ -117,6 +118,16 @@ class Validator:
             raise ValueError(
                 f"Line {line_number}: connection '{connection}' "
                 "connects a zone to itself"
+            )
+
+        if from_zone not in seen_zones:
+            raise ValueError(
+                f"Line {line_number}: zone: {from_zone} is not defined"
+            )
+
+        if to_zone not in seen_zones:
+            raise ValueError(
+                f"Line {line_number}: zone: {to_zone} is not defined"
             )
 
         connection_key = (
@@ -156,7 +167,6 @@ class Validator:
         nb_drones_amount: int = 0
         seen_zones: Set[str] = set()
         seen_connections: Set[Tuple[str, str]] = set()
-        connection_lines: List[Line] = []
 
         for line in lines:
             if not len(line.arguments):
@@ -164,6 +174,11 @@ class Validator:
                     f"Line {line.line_number}: Amount of arguments cannot be 0"
                 )
             type_of_line: str = line.arguments[0]
+            if type_of_line != "nb_drones:" and nb_drones_amount == 0:
+                raise ValueError(
+                    f"Line {line.line_number}: The first "
+                    f"instruction must be 'nb_drones:'"
+                )
             if type_of_line == "hub:":
                 Validator._check_zone_line(line, seen_zones)
                 seen_zones.add(line.arguments[1])
@@ -191,8 +206,7 @@ class Validator:
                         f"Line {line.line_number}: Found second nb_drones line"
                     )
             elif type_of_line == "connection:":
-                Validator._check_connection(line, seen_connections)
-                connection_lines.append(line)
+                Validator._check_connection(line, seen_zones, seen_connections)
             else:
                 raise ValueError(
                     f"Line {line.line_number}: Unknown line type: "
@@ -205,17 +219,3 @@ class Validator:
             raise ValueError("Missing end_hub")
         if nb_drones_amount != 1:
             raise ValueError("Missing nb_drones")
-
-        for line in connection_lines:
-            connection = line.arguments[1]
-            from_zone, to_zone = connection.split('-')
-            if from_zone not in seen_zones:
-                raise ValueError(
-                    f"Line {line.line_number}: unknown zone '{from_zone}' "
-                    "in connection"
-                )
-            if to_zone not in seen_zones:
-                raise ValueError(
-                    f"Line {line.line_number}: unknown zone '{to_zone}' "
-                    "in connection"
-                )
