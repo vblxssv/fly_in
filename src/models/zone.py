@@ -74,3 +74,11 @@ class Zone(BaseModel):
     type: ZoneType = ZoneType.NORMAL
     max_drones: int = 1
     color: ZoneColor = ZoneColor.NONE
+
+    @property
+    def priority(self) -> float:
+        return self.type.priority
+
+    @property
+    def cost(self) -> int:
+        return self.type.cost

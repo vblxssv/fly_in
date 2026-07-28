@@ -1,54 +1,53 @@
-from src.models import ZoneType, SimulationState
-from .algorithm import IAlgorithm
-
-from heapq import heappop, heappush
-from typing import List, Set, FrozenSet, Optional
+import heapq
+from typing import Dict, List, Tuple
+from src.models import Graph, Zone, ZoneType
 
 
-class Dijkstra(IAlgorithm):
-    def calculate_path(
-        self,
-        state: SimulationState,
-        start: str,
-        blocked_edges: Optional[Set[FrozenSet[str]]] = None,
-    ) -> List[str]:
-        graph = state.graph
-        end = graph.end
-        blocked_edges = blocked_edges or set()
+class Dijkstra:
+    @staticmethod
+    def calculate(graph: Graph, target_zone: str) -> Dict[str, float]:
+        """Finds reversed paths"""
+        reversed_adj: Dict[str, List[str]] = {z: [] for z in graph.zones}
+        for u, edges in graph.adjacency_list.items():
+            for edge in edges:
+                reversed_adj[edge.target].append(u)
 
-        distances: dict[str, float] = {z: float("inf") for z in graph.zones}
-        previous: dict[str, str | None] = {z: None for z in graph.zones}
-        queue: list[tuple[float, str]] = [(0.0, start)]
-        distances[start] = 0.0
+        heuristics: Dict[str, float] = {zone: float('inf') for zone in graph.zones}
+        heuristics[target_zone] = 0.0
 
-        while queue:
-            current_dist, current = heappop(queue)
-            if current_dist > distances[current]:
+        pq: List[Tuple[float, str]] = [(0.0, target_zone)]
+
+        while pq:
+            current_dist, current_node = heapq.heappop(pq)
+
+            if current_dist > heuristics[current_node]:
                 continue
-            if current == end:
-                break
 
-            for edge in graph.adjacency_list.get(current, []):
-                next_zone = graph.zones[edge.target]
+            for prev_node in reversed_adj.get(current_node, []):
+                prev_zone = graph.zones[prev_node]
 
-                if next_zone.type == ZoneType.BLOCKED:
+                if prev_zone.type == ZoneType.BLOCKED:
                     continue
 
-                if frozenset({current, edge.target}) in blocked_edges:
-                    continue
+                step_cost = graph.zones[current_node].priority
+                new_dist = current_dist + step_cost
 
-                new_dist = current_dist + next_zone.type.priority
-                if new_dist < distances[edge.target]:
-                    distances[edge.target] = new_dist
-                    previous[edge.target] = current
-                    heappush(queue, (new_dist, edge.target))
+                if new_dist < heuristics[prev_node]:
+                    heuristics[prev_node] = new_dist
+                    heapq.heappush(pq, (new_dist, prev_node))
 
-        if distances[end] == float("inf"):
-            return []
+        return heuristics
 
-        path: List[str] = []
-        curr: str | None = end
-        while curr:
-            path.append(curr)
-            curr = previous[curr]
-        return path[::-1]
+
+if __name__ == "__main__":
+    import importlib
+
+    parser_mod = importlib.import_module("src.input")
+    models_mod = importlib.import_module("src.models")
+
+    state = models_mod.StateFactory.build(parser_mod.Parser.parse("test_map.txt"))
+    
+    # Теперь передаем просто строку!
+    res = Dijkstra.calculate(state.graph, state.graph.end)
+    print(res)
+

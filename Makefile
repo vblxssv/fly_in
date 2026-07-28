@@ -16,7 +16,7 @@ $(VENV)/bin/python3: requirements.txt
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
 
-run: 
+run: install
 	$(PYTHON) main.py --map $(MAP) --algorithm $(ALGORITHM) --renderer $(RENDERER) \
 		--logger $(LOGGER)
 

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 class Graph(BaseModel):
     zones: Dict[str, Zone] = Field(default_factory=dict)
-    adjacency_list: Dict[str, List["Edge"]] = Field(default_factory=dict)
+    adjacency_list: Dict[str, List[Edge]] = Field(default_factory=dict)
     start: str = ""
     end: str = ""
 
@@ -24,7 +24,12 @@ class Graph(BaseModel):
         self.adjacency_list[target].append(Edge(target=source,
                                                 capacity=capacity))
 
-    def get_edge(self, target: str, source: str) -> "Edge":
+    def get_neighbors(self, zone_name: str) -> List[str]:
+        if zone_name not in self.zones.keys():
+            raise ValueError(f"There is no zone: {zone_name} in known zones")
+        return [edge.target for edge in self.adjacency_list.get(zone_name, [])]
+
+    def get_edge(self, target: str, source: str) -> Edge:
         for edge in self.adjacency_list.get(source, []):
             if edge.target == target:
                 return edge
