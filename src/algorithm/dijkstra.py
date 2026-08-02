@@ -1,6 +1,6 @@
 import heapq
 from typing import Dict, List, Tuple
-from src.models import Graph, Zone, ZoneType
+from src.models import Graph, ZoneType
 
 
 class Dijkstra:
@@ -12,7 +12,8 @@ class Dijkstra:
             for edge in edges:
                 reversed_adj[edge.target].append(u)
 
-        heuristics: Dict[str, float] = {zone: float('inf') for zone in graph.zones}
+        heuristics: Dict[str, float] = {zone: float('inf')
+                                        for zone in graph.zones}
         heuristics[target_zone] = 0.0
 
         pq: List[Tuple[float, str]] = [(0.0, target_zone)]
@@ -37,17 +38,3 @@ class Dijkstra:
                     heapq.heappush(pq, (new_dist, prev_node))
 
         return heuristics
-
-
-if __name__ == "__main__":
-    import importlib
-
-    parser_mod = importlib.import_module("src.input")
-    models_mod = importlib.import_module("src.models")
-
-    state = models_mod.StateFactory.build(parser_mod.Parser.parse("test_map.txt"))
-    
-    # Теперь передаем просто строку!
-    res = Dijkstra.calculate(state.graph, state.graph.end)
-    print(res)
-

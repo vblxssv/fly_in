@@ -1,7 +1,11 @@
 from .reservation_table import ReservationTable
 from src.models import Graph
 
+import heapq
 
-class A_Star:
+
+class SpaceTimeAStar:
     @staticmethod
-    def calculate(table: ReservationTable, graph: Graph)
+    def add_path(drone_id: int, graph: Graph, table: ReservationTable) -> None:
+        """Has to mutate table"""
+        
