@@ -1,9 +1,9 @@
-from .algorithm import IAlgorithm
 from .dijkstra import Dijkstra
-from .astar import AStar
+from .astar import SpaceTimeAStar
+from .reservation_table import ReservationTable
 
 __all__ = [
-    "IAlgorithm",
     "Dijkstra",
-    "AStar"
+    "SpaceTimeAStar",
+    "ReservationTable"
 ]

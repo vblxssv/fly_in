@@ -1,9 +1,9 @@
 from src.input import Parser, Validator, Line
 from src.models import StateFactory, SimulationState, Frame
-from src.algorithm import Dijkstra, AStar
+from src.algorithm import Dijkstra, SpaceTimeAStar
 from src.renderer import ArcadeRenderer, ConsoleRenderer
 from src.logger import ConsoleLogger, FileLogger
-from src.simulation_engine import SimulationEngine
+from src.algorithm import ReservationTable
 
 from typing import List
 import argparse
@@ -13,16 +13,15 @@ class Application:
     def __init__(self, args: argparse.Namespace) -> None:
         content: List[Line] = Parser.parse(args.map)
         Validator.validate(content)
-        state: SimulationState = StateFactory.build(content)
-        algo = (Dijkstra()
-                if args.algorithm == "dijkstra" else AStar())
+        self.state: SimulationState = StateFactory.build(content)
 
-        self._renderer = (ConsoleRenderer()
-                          if args.renderer == "console" else ArcadeRenderer())
-        logger = (ConsoleLogger()
-                  if args.logger == "console" else FileLogger("sim.log"))
-        self._engine = SimulationEngine(algo, state, logger)
-
+        
     def run(self) -> None:
-        frames: List[Frame] = self._engine.run()
-        self._renderer.play(frames)
+        heurisics = Dijkstra.calculate(self.state.graph, self.state.graph.end)
+        for k, v in heurisics.items():
+            print(k, v)
+        table = ReservationTable()
+
+        for i in range(5):
+            SpaceTimeAStar.add_path(i, self.state.graph, table, heurisics,
+                                    self.state.graph.start, self.state.graph.end)
