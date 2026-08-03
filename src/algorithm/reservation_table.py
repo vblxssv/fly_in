@@ -19,7 +19,7 @@ class ReservationTable(BaseModel):
         return True
 
     def reserve_path(self, drone_id: int,
-                     path: List[Tuple[str, int, int]]) -> None:
+                     path: List[Tuple[str, int]]) -> None:
         for i in range(len(path)):
             zone, time = path[i][0], path[i][1]
 
