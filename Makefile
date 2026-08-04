@@ -2,27 +2,36 @@ MAP ?= maps/challenger/01_the_impossible_dream.txt
 ALGORITHM ?= dijkstra
 RENDERER ?= arcade
 LOGGER ?= file
+
 VENV = .venv
-PYTHON = $(VENV)/bin/python3
-PIP = $(VENV)/bin/pip
+
+ifeq ($(OS),Windows_NT)
+	PYTHON = $(VENV)/Scripts/python.exe
+else
+	PYTHON = $(VENV)/bin/python
+endif
 
 
 .PHONY: run clean lint install
 
-install: $(VENV)/bin/python3
+install: $(VENV)/.installed
 
-$(VENV)/bin/python3: requirements.txt
-	python3 -m venv $(VENV)
-	$(PIP) install --upgrade pip
-	$(PIP) install -r requirements.txt
+$(VENV)/.installed: requirements.txt
+	python -m venv $(VENV)
+	$(PYTHON) -m pip install --upgrade pip
+	$(PYTHON) -m pip install -r requirements.txt
+	touch $(VENV)/.installed
+
 
 run: install
 	$(PYTHON) main.py --map $(MAP) --algorithm $(ALGORITHM) --renderer $(RENDERER) \
 		--logger $(LOGGER)
 
+
 lint: install
-	$(VENV)/bin/flake8 src/
-	$(VENV)/bin/mypy src/ --disallow-untyped-defs
+	$(PYTHON) -m flake8 src/
+	$(PYTHON) -m mypy src/ --disallow-untyped-defs
+
 
 clean:
 	rm -rf $(VENV)

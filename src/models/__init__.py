@@ -1,4 +1,4 @@
-from .drone import Drone, DroneStatus
+from .drone import Drone, DroneStatus, SpaceTimeState, Location
 from .edge import Edge
 from .frame import Frame
 from .graph import Graph
@@ -18,5 +18,7 @@ __all__ = [
     "SimulationState",
     "StateFactory",
     "Frame",
-    "Move"
+    "Move",
+    "SpaceTimeState",
+    "Location"
 ]

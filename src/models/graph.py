@@ -35,6 +35,11 @@ class Graph(BaseModel):
                 return edge
         raise ValueError(f"No edge from {source} to {target}")
 
+    def get_zone(self, zone_name: str) -> Zone:
+        if zone_name not in self.zones:
+            raise ValueError(f"There is no {zone_name} in graph")
+        return self.zones[zone_name]
+
     def __str__(self) -> str:
         lines = ["Graph Status:"]
         lines.append(f"  Total Zones: {len(self.zones)}")
@@ -51,3 +56,15 @@ class Graph(BaseModel):
                              f"--> {edge.target}")
 
         return "\n".join(lines)
+
+
+
+class Connection(BaseModel):
+    zones: frozenset[str]
+    capacity: int
+
+
+class Graph(BaseModel):
+    zones: Dict[str, Zone] = Field(default_factory=dict)
+    connections: Dict[frozenset[str], Connection] = Field(default_factory=dict)
+    adjacency_list: Dict[str, List[str]] = Field(default_factory=dict)

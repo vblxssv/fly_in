@@ -1,197 +1,270 @@
-import heapq
-from math import ceil
-from typing import Dict, List, Tuple, Optional
-
-from src.models import Graph, ZoneType
+from src.models import Graph, ZoneType, SpaceTimeState, Location
+from typing import List, Set, Dict
+from .dijkstra import Dijkstra
 from .reservation_table import ReservationTable
 
-TimeNode = Tuple[str, int]
+import heapq
+
+
+class A_Star:
+    @staticmethod
+    def reconstruct_path(came_from: Dict[str, str], current: str) -> List[str]:
+        path = []
+
+        while current in came_from:
+            path.append(current)
+            current = came_from[current]
+
+        path.append(current)
+        path.reverse()
+
+        return path
+
+    @staticmethod
+    def calculate_path(graph: Graph, start: str, end: str) -> List[str]:
+        visited: Set[str] = set()  # Посещенные вершины, те к которым уже найден кратчайший путь
+        candidates = []  # Очередь с приоритетом
+        g_score = {start: 0}
+        heuristic: Dict[str, float] = Dijkstra.calculate(graph, end) # Эвристика от конца
+
+        came_from: Dict[str, str] = {}
+        heapq.heappush(candidates, (0, start))
+
+        while candidates:
+            current_f, current = heapq.heappop(candidates)
+
+            if current in visited: # если посещали - пропустить
+                continue
+
+            visited.add(current) # Иначе добавить и работать
+
+            if current == end:
+                return A_Star.reconstruct_path(came_from, current)
+
+            for neighbor in graph.get_neighbors(current):
+
+                zone = graph.get_zone(neighbor)
+
+                if zone.type == ZoneType.BLOCKED:
+                    continue
+
+                new_g = g_score[current] + zone.priority
+
+                if new_g < g_score.get(neighbor, float("inf")):
+                    came_from[neighbor] = current
+                    g_score[neighbor] = new_g
+
+                    new_f = new_g + heuristic[neighbor]
+
+                    heapq.heappush(
+                        candidates,
+                        (new_f, neighbor)
+                    )
+        return []
 
 
 class SpaceTimeAStar:
-    _GOAL_SAFETY_HORIZON = 200
 
     @staticmethod
-    def add_path(
-        drone_id: int,
+    def get_neighbors(
         graph: Graph,
-        table: ReservationTable,
-        heuristic: Dict[str, float],
-        start: str,
-        goal: str,
-    ) -> None:
-        """
-        Plan a collision-free path for `drone_id` from `start` (time 0)
-        to `goal`, respecting everything already reserved in `table`.
-        Mutates `table` in place by reserving the found path.
-        Raises ValueError if no path exists.
-        """
-        if start not in graph.zones or goal not in graph.zones:
-            raise ValueError(f"Unknown zone: {start} or {goal}")
+        current: SpaceTimeState
+    ) -> List[SpaceTimeState]:
 
-        start_node: TimeNode = (start, 0)
+        neighbors = []
 
-        open_heap: List[Tuple[float, float, str, int]] = [
-            (heuristic.get(start, 0.0), 0.0, start, 0)
-        ]
-        came_from: Dict[TimeNode, TimeNode] = {}
-        best_g: Dict[TimeNode, float] = {start_node: 0.0}
-        closed: set = set()
+        if current.location == Location.ZONE:
 
-        while open_heap:
-            _, g, zone, time = heapq.heappop(open_heap)
-            node: TimeNode = (zone, time)
-
-            if node in closed:
-                continue
-            closed.add(node)
-
-            if zone == goal and SpaceTimeAStar._goal_is_safe(
-                table, graph, goal, time
-            ):
-                path = SpaceTimeAStar._reconstruct(came_from, node)
-                table.reserve_path(drone_id, path)
-                return
-
-            SpaceTimeAStar._expand_wait(
-                graph, table, heuristic, came_from, best_g, open_heap,
-                zone, time, g,
-            )
-            SpaceTimeAStar._expand_moves(
-                graph, table, heuristic, came_from, best_g, open_heap,
-                zone, time, g,
+            # Ждать в зоне
+            neighbors.append(
+                SpaceTimeState(
+                    location=Location.ZONE,
+                    name=current.name,
+                    time=current.time + 1
+                )
             )
 
-        raise ValueError(
-            f"No path found for drone {drone_id} from {start} to {goal}"
-        )
+            # Переходы в соседние зоны
+            for zone_name in graph.get_neighbors(current.name):
 
-    # ------------------------------------------------------------------
-    # Expansion helpers
-    # ------------------------------------------------------------------
+                zone = graph.get_zone(zone_name)
 
-    @staticmethod
-    def _expand_wait(
-        graph: Graph,
-        table: ReservationTable,
-        heuristic: Dict[str, float],
-        came_from: Dict[TimeNode, TimeNode],
-        best_g: Dict[TimeNode, float],
-        open_heap: List[Tuple[float, float, str, int]],
-        zone: str,
-        time: int,
-        g: float,
-    ) -> None:
-        zone_model = graph.zones[zone]
-        next_time = time + 1
+                if zone.type == ZoneType.BLOCKED:
+                    continue
 
-        if not table.is_zone_free(zone, next_time, zone_model.max_drones):
-            return
+                if zone.type == ZoneType.RESTRICTED:
+                    # Переход через связь
+                    neighbors.append(
+                        SpaceTimeState(
+                            location=Location.EDGE,
+                            name=zone.name,
+                            time=current.time + 1
+                        )
+                    )
 
-        SpaceTimeAStar._relax(
-            came_from, best_g, open_heap, heuristic,
-            from_node=(zone, time),
-            to_zone=zone,
-            to_time=next_time,
-            new_g=g + 1.0,
-        )
+                else:
+                    # Обычный переход
+                    neighbors.append(
+                        SpaceTimeState(
+                            location=Location.ZONE,
+                            name=zone.name,
+                            time=current.time + 1
+                        )
+                    )
 
-    @staticmethod
-    def _expand_moves(
-        graph: Graph,
-        table: ReservationTable,
-        heuristic: Dict[str, float],
-        came_from: Dict[TimeNode, TimeNode],
-        best_g: Dict[TimeNode, float],
-        open_heap: List[Tuple[float, float, str, int]],
-        zone: str,
-        time: int,
-        g: float,
-    ) -> None:
-        for neighbor in graph.get_neighbors(zone):
-            neighbor_zone = graph.zones[neighbor]
 
-            if neighbor_zone.type == ZoneType.BLOCKED:
-                continue
+        elif current.location == Location.EDGE:
 
-            edge = graph.get_edge(neighbor, zone)
-            travel_time = max(1, ceil(neighbor_zone.type.priority))
-            arrival_time = time + travel_time
-
-            if not table.is_edge_free(
-                zone, neighbor, time, travel_time, edge.capacity
-            ):
-                continue
-            if not table.is_zone_free(
-                neighbor, arrival_time, neighbor_zone.max_drones
-            ):
-                continue
-
-            SpaceTimeAStar._relax(
-                came_from, best_g, open_heap, heuristic,
-                from_node=(zone, time),
-                to_zone=neighbor,
-                to_time=arrival_time,
-                new_g=g + neighbor_zone.type.priority,
+            # Ждать на связи
+            neighbors.append(
+                SpaceTimeState(
+                    location=Location.EDGE,
+                    name=current.name,
+                    time=current.time + 1
+                )
             )
 
-    @staticmethod
-    def _relax(
-        came_from: Dict[TimeNode, TimeNode],
-        best_g: Dict[TimeNode, float],
-        open_heap: List[Tuple[float, float, str, int]],
-        heuristic: Dict[str, float],
-        from_node: TimeNode,
-        to_zone: str,
-        to_time: int,
-        new_g: float,
-    ) -> None:
-        to_node: TimeNode = (to_zone, to_time)
+            # Прибыть в зону
+            neighbors.append(
+                SpaceTimeState(
+                    location=Location.ZONE,
+                    name=current.name,
+                    time=current.time + 1
+                )
+            )
 
-        if new_g >= best_g.get(to_node, float("inf")):
-            return
+        return neighbors
 
-        best_g[to_node] = new_g
-        came_from[to_node] = from_node
-        f = new_g + heuristic.get(to_zone, float("inf"))
-        heapq.heappush(open_heap, (f, new_g, to_zone, to_time))
-
-    # ------------------------------------------------------------------
-    # Goal validation / reconstruction
-    # ------------------------------------------------------------------
 
     @staticmethod
-    def _goal_is_safe(
-        table: ReservationTable,
-        graph: Graph,
-        goal: str,
-        arrival_time: int,
-    ) -> bool:
-        """
-        A path that reaches `goal` at `arrival_time` is only valid if
-        the drone can stay there afterwards without being displaced by
-        an existing reservation. We check a bounded horizon rather than
-        "forever", since the table only ever holds finite reservations.
-        """
-        goal_zone = graph.zones[goal]
-        horizon = arrival_time + SpaceTimeAStar._GOAL_SAFETY_HORIZON
+    def reconstruct_path(
+        came_from: Dict[SpaceTimeState, SpaceTimeState],
+        current: SpaceTimeState
+    ) -> List[SpaceTimeState]:
 
-        for t in range(arrival_time, horizon):
-            if not table.is_zone_free(goal, t, goal_zone.max_drones):
-                return False
-        return True
-
-    @staticmethod
-    def _reconstruct(
-        came_from: Dict[TimeNode, TimeNode],
-        end_node: TimeNode,
-    ) -> List[TimeNode]:
-        path: List[TimeNode] = [end_node]
-        current = end_node
+        path = [current]
 
         while current in came_from:
             current = came_from[current]
             path.append(current)
 
         path.reverse()
+
         return path
+
+
+    @staticmethod
+    def calculate_path(
+        graph: Graph,
+        start: str,
+        end: str,
+        table: ReservationTable
+    ) -> List[SpaceTimeState]:
+
+        start_state = SpaceTimeState(
+            location=Location.ZONE,
+            name=start,
+            time=0
+        )
+
+        visited: Set[SpaceTimeState] = set()
+
+        candidates = []
+
+        counter = 0
+
+        g_score: Dict[SpaceTimeState, float] = {
+            start_state: 0
+        }
+
+        came_from: Dict[SpaceTimeState, SpaceTimeState] = {}
+
+        # эвристика до цели
+        heuristic: Dict[str, float] = Dijkstra.calculate(
+            graph,
+            end
+        )
+
+
+        heapq.heappush(
+            candidates,
+            (
+                0,
+                counter,
+                start_state
+            )
+        )
+
+
+        while candidates:
+
+            current_f, _, current = heapq.heappop(
+                candidates
+            )
+
+
+            if current in visited:
+                continue
+
+
+            # цель достигнута только в зоне
+            if (
+                current.location == Location.ZONE
+                and current.name == end
+            ):
+                return SpaceTimeAStar.reconstruct_path(
+                    came_from,
+                    current
+                )
+
+
+            visited.add(current)
+
+
+            for neighbor in SpaceTimeAStar.get_neighbors(
+                graph,
+                current
+            ):
+
+                # проверка конфликтов
+                if not table.is_free(
+                    current,
+                    neighbor
+                ):
+                    continue
+
+
+                new_g = g_score[current] + 1
+
+
+                if new_g < g_score.get(
+                    neighbor,
+                    float("inf")
+                ):
+
+                    came_from[neighbor] = current
+
+                    g_score[neighbor] = new_g
+
+
+                    new_f = (
+                        new_g
+                        +
+                        heuristic.get(
+                            neighbor.name,
+                            float("inf")
+                        )
+                    )
+
+
+                    counter += 1
+
+                    heapq.heappush(
+                        candidates,
+                        (
+                            new_f,
+                            counter,
+                            neighbor
+                        )
+                    )
+        return []

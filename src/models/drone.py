@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Union, Tuple
 from enum import Enum
 
 
@@ -26,3 +26,17 @@ class Drone(BaseModel):
             raise ValueError("Already at end of path")
 
         return self.path[idx + 1]
+
+
+class Location(Enum):
+    ZONE = "zone"
+    EDGE = "edge"
+
+
+class SpaceTimeState(BaseModel):
+    location: Location
+    name: str
+    time: int
+
+    class Config:
+        frozen = True

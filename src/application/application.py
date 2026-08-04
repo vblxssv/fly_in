@@ -1,6 +1,6 @@
 from src.input import Parser, Validator, Line
 from src.models import StateFactory, SimulationState, Frame
-from src.algorithm import Dijkstra, SpaceTimeAStar
+from src.algorithm import Dijkstra, SpaceTimeAStar, A_Star
 from src.renderer import ArcadeRenderer, ConsoleRenderer
 from src.logger import ConsoleLogger, FileLogger
 from src.algorithm import ReservationTable
@@ -16,15 +16,6 @@ class Application:
         self.state: SimulationState = StateFactory.build(content)
 
     def run(self) -> None:
-        heurisics = Dijkstra.calculate(self.state.graph, self.state.graph.end)
-        for k, v in heurisics.items():
-            print(k, v)
-        table = ReservationTable()
-
-        try:
-            for i in range(5):
-                SpaceTimeAStar.add_path(i, self.state.graph, table, heurisics,
-                                        self.state.graph.start, self.state.graph.end)
-        except:
-            pass
-        print(table)
+        reserv_table = ReservationTable(graph=self.state.graph)
+        path = SpaceTimeAStar.calculate_path(self.state.graph, self.state.graph.start, self.state.graph.end, reserv_table)
+        print(path)
