@@ -62,9 +62,9 @@ class SpaceTimeAStar:
                 zone, time, g,
             )
 
-            raise ValueError(
-                f"No path found for drone {drone_id} from {start} to {goal}"
-            )
+        raise ValueError(
+            f"No path found for drone {drone_id} from {start} to {goal}"
+        )
 
     # ------------------------------------------------------------------
     # Expansion helpers

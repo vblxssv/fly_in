@@ -15,13 +15,16 @@ class Application:
         Validator.validate(content)
         self.state: SimulationState = StateFactory.build(content)
 
-        
     def run(self) -> None:
         heurisics = Dijkstra.calculate(self.state.graph, self.state.graph.end)
         for k, v in heurisics.items():
             print(k, v)
         table = ReservationTable()
 
-        for i in range(5):
-            SpaceTimeAStar.add_path(i, self.state.graph, table, heurisics,
-                                    self.state.graph.start, self.state.graph.end)
+        try:
+            for i in range(5):
+                SpaceTimeAStar.add_path(i, self.state.graph, table, heurisics,
+                                        self.state.graph.start, self.state.graph.end)
+        except:
+            pass
+        print(table)
