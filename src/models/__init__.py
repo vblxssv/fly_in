@@ -1,24 +1,24 @@
 from .drone import Drone, DroneStatus, SpaceTimeState, Location
-from .edge import Edge
+from .connection import Connection
 from .frame import Frame
 from .graph import Graph
 from .move import Move
 from .state import SimulationState
 from .zone import Zone, ZoneType
-from .factory import StateFactory
+from .factory import GraphFactory
 
 
 __all__ = [
     "Drone",
     "DroneStatus",
     "Graph",
-    "Edge",
+    "Connection",
     "Zone",
     "ZoneType",
     "SimulationState",
-    "StateFactory",
     "Frame",
     "Move",
     "SpaceTimeState",
-    "Location"
+    "Location",
+    "GraphFactory"
 ]

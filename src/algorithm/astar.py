@@ -64,18 +64,15 @@ class A_Star:
 
 
 class SpaceTimeAStar:
-
     @staticmethod
     def get_neighbors(
         graph: Graph,
         current: SpaceTimeState
     ) -> List[SpaceTimeState]:
 
-        neighbors = []
+        neighbors: List[SpaceTimeState] = []
 
         if current.location == Location.ZONE:
-
-            # Ждать в зоне
             neighbors.append(
                 SpaceTimeState(
                     location=Location.ZONE,
@@ -83,17 +80,13 @@ class SpaceTimeAStar:
                     time=current.time + 1
                 )
             )
-
-            # Переходы в соседние зоны
             for zone_name in graph.get_neighbors(current.name):
-
                 zone = graph.get_zone(zone_name)
 
                 if zone.type == ZoneType.BLOCKED:
                     continue
 
                 if zone.type == ZoneType.RESTRICTED:
-                    # Переход через связь
                     neighbors.append(
                         SpaceTimeState(
                             location=Location.EDGE,
@@ -101,9 +94,7 @@ class SpaceTimeAStar:
                             time=current.time + 1
                         )
                     )
-
                 else:
-                    # Обычный переход
                     neighbors.append(
                         SpaceTimeState(
                             location=Location.ZONE,
@@ -111,11 +102,7 @@ class SpaceTimeAStar:
                             time=current.time + 1
                         )
                     )
-
-
         elif current.location == Location.EDGE:
-
-            # Ждать на связи
             neighbors.append(
                 SpaceTimeState(
                     location=Location.EDGE,
@@ -123,8 +110,6 @@ class SpaceTimeAStar:
                     time=current.time + 1
                 )
             )
-
-            # Прибыть в зону
             neighbors.append(
                 SpaceTimeState(
                     location=Location.ZONE,
@@ -132,9 +117,7 @@ class SpaceTimeAStar:
                     time=current.time + 1
                 )
             )
-
         return neighbors
-
 
     @staticmethod
     def reconstruct_path(
@@ -151,7 +134,6 @@ class SpaceTimeAStar:
         path.reverse()
 
         return path
-
 
     @staticmethod
     def calculate_path(

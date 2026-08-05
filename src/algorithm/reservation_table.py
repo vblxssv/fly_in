@@ -6,11 +6,11 @@ from src.models import SpaceTimeState, Location, Graph
 class ReservationTable(BaseModel):
     graph: Graph
 
-    zones: Dict[tuple[str, int], Set[int]] = Field(
+    zones: Dict[Tuple[str, int], Set[int]] = Field(
         default_factory=dict
     )
 
-    edges: Dict[tuple[frozenset[str], int], Set[int]] = Field(
+    edges: Dict[Tuple[frozenset[str], int], Set[int]] = Field(
         default_factory=dict
     )
 
