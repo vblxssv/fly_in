@@ -6,35 +6,37 @@ from src.models import Graph, ZoneType
 class Dijkstra:
     @staticmethod
     def calculate(graph: Graph, target_zone: str) -> Dict[str, float]:
-        """Finds reversed paths"""
-        reversed_adj: Dict[str, List[str]] = {z: [] for z in graph.zones}
-        for u, edges in graph.adjacency_list.items():
-            for edge in edges:
-                reversed_adj[edge.target].append(u)
+        reversed_adj: Dict[str, List[str]] = {
+            zone: [] for zone in graph.zones
+        }
 
-        heuristics: Dict[str, float] = {zone: float('inf')
-                                        for zone in graph.zones}
-        heuristics[target_zone] = 0.0
+        for source, neighbors in graph.adjacency_list.items():
+            for target in neighbors:
+                reversed_adj[target].append(source)
 
-        pq: List[Tuple[float, str]] = [(0.0, target_zone)]
+        distances: Dict[str, float] = {
+            zone: float("inf") for zone in graph.zones
+        }
+        distances[target_zone] = 0
+
+        pq: List[Tuple[float, str]] = [(0, target_zone)]
 
         while pq:
-            current_dist, current_node = heapq.heappop(pq)
+            current_cost, current = heapq.heappop(pq)
 
-            if current_dist > heuristics[current_node]:
+            if current_cost != distances[current]:
                 continue
+            for previous in reversed_adj[current]:
+                previous_zone = graph.get_zone(previous)
 
-            for prev_node in reversed_adj.get(current_node, []):
-                prev_zone = graph.zones[prev_node]
-
-                if prev_zone.type == ZoneType.BLOCKED:
+                if previous_zone.type == ZoneType.BLOCKED:
                     continue
+                edge_cost = graph.get_zone(current).priority
 
-                step_cost = graph.zones[current_node].priority
-                new_dist = current_dist + step_cost
+                new_cost = current_cost + edge_cost
 
-                if new_dist < heuristics[prev_node]:
-                    heuristics[prev_node] = new_dist
-                    heapq.heappush(pq, (new_dist, prev_node))
+                if new_cost < distances[previous]:
+                    distances[previous] = new_cost
+                    heapq.heappush(pq, (new_cost, previous))
 
-        return heuristics
+        return distances

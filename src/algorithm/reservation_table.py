@@ -1,111 +1,87 @@
 from pydantic import BaseModel, Field
 from typing import Dict, Tuple, Set, List
-from src.models import SpaceTimeState, Location, Graph
+from src.models import SpaceTimeState, Location, Graph, Zone
 
 
 class ReservationTable(BaseModel):
     graph: Graph
+    zones: Dict[Tuple[str, int], Set[int]] = Field(default_factory=dict)
+    edges: Dict[Tuple[frozenset[str], int],
+                Set[int]] = Field(default_factory=dict)
 
-    zones: Dict[Tuple[str, int], Set[int]] = Field(
-        default_factory=dict
-    )
-
-    edges: Dict[Tuple[frozenset[str], int], Set[int]] = Field(
-        default_factory=dict
-    )
-
-    def _is_zone_free(
-        self,
-        state: SpaceTimeState
-    ) -> bool:
-        zone = self.graph.get_zone(state.name)
-
+    def _check_zone(self, neighbor: SpaceTimeState) -> bool:
+        zone = self.graph.get_zone(neighbor.zone_target)
         reserved = self.zones.get(
-            (state.name, state.time),
-            set()
+            neighbor.zone_time,
+            []
         )
-
         return len(reserved) < zone.max_drones
 
-    def _is_edge_free(
-        self,
-        current: SpaceTimeState,
-        target: SpaceTimeState
-    ) -> bool:
-
-        edge = self.graph.get_edge(
-            target.name,
-            current.name
+    def _get_edge_key(self,
+                      current: SpaceTimeState,
+                      neighbor: SpaceTimeState
+                      ) -> tuple[frozenset[str], int]:
+        return (
+            frozenset({
+                current.zone_target,
+                neighbor.zone_target
+            }),
+            neighbor.time
         )
 
-        reserved = self.edges.get(
-            (
-                frozenset({
-                    current.name,
-                    target.name
-                }),
-                target.time
-            ),
-            set()
-        )
+    def _check_connection(self, source: SpaceTimeState,
+                          target: SpaceTimeState) -> bool:
+        connection = self.graph.get_connection(source.zone_target,
+                                               target.zone_target)
+        reserved = self.edges.get(self._get_edge_key(source, target),
+                                  [])
+        return len(reserved) < connection.capacity
 
-        return len(reserved) < edge.capacity
+    def is_free(self,
+                current: SpaceTimeState,
+                neighbor: SpaceTimeState
+                ) -> bool:
 
-    def is_free(
-        self,
-        current: SpaceTimeState,
-        neighbor: SpaceTimeState
-    ) -> bool:
+        # ожидание в зоне
+        if (
+            current.location == Location.ZONE
+            and neighbor.location == Location.ZONE
+            and current.zone_target == neighbor.zone_target
+        ):
+            return self._check_zone(neighbor)
 
-        if neighbor.location == Location.ZONE:
-            return self._is_zone_free(neighbor)
-
-        if neighbor.location == Location.EDGE:
-            return self._is_edge_free(
-                current,
-                neighbor
+        # обычный переход зона -> зона
+        if (
+            current.location == Location.ZONE
+            and neighbor.location == Location.ZONE
+        ):
+            return (
+                self._check_connection(current, neighbor)
+                and self._check_zone(neighbor)
             )
+
+        # вход на связь
+        if (
+            current.location == Location.ZONE
+            and neighbor.location == Location.EDGE
+        ):
+            return self._check_connection(current, neighbor)
+
+        # ожидание на связи
+        # if (
+        #     current.location == Location.EDGE
+        #     and neighbor.location == Location.EDGE
+        # ):
+        #     return self._check_connection(current, neighbor)
+
+        # выход со связи
+        if (
+            current.location == Location.EDGE
+            and neighbor.location == Location.ZONE
+        ):
+            return self._check_zone(neighbor)
 
         return False
 
-    def reserve_path(
-        self,
-        drone_id: int,
-        path: List[SpaceTimeState]
-    ) -> None:
-
-        for i, state in enumerate(path):
-
-            if state.location == Location.ZONE:
-
-                key = (
-                    state.name,
-                    state.time
-                )
-
-                if key not in self.zones:
-                    self.zones[key] = set()
-
-                self.zones[key].add(drone_id)
-
-
-            elif state.location == Location.EDGE:
-
-                previous = path[i - 1]
-
-                edge = frozenset({
-                    previous.name,
-                    state.name
-                })
-
-                key = (
-                    edge,
-                    state.time
-                )
-
-                if key not in self.edges:
-                    self.edges[key] = set()
-
-                self.edges[key].add(drone_id)
-
-
+    def reserve_path(self, path: List[SpaceTimeState], drone_id: int) -> None:
+        ...

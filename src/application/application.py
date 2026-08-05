@@ -1,6 +1,6 @@
 from src.input import Parser, Validator, Line
 
-from src.algorithm import Dijkstra, SpaceTimeAStar, A_Star
+from src.algorithm import Dijkstra, SpaceTimeAStar
 from src.renderer import ArcadeRenderer, ConsoleRenderer
 from src.logger import ConsoleLogger, FileLogger
 from src.algorithm import ReservationTable
@@ -17,7 +17,11 @@ class Application:
         self.graph = GraphFactory.build(content)
         print(self.graph)
 
-
     def run(self) -> None:
+        heu = Dijkstra.calculate(self.graph, "end")
+        print(heu)
         table = ReservationTable(graph=self.graph)
-        path = SpaceTimeAStar.calculate_path(self.graph, "start", "end", table)
+
+        path = SpaceTimeAStar.calculate_path(self.graph, "start", "end", table, heu)
+        for i in path:
+            print(i)

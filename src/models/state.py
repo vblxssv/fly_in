@@ -13,3 +13,5 @@ class SimulationState(BaseModel):
     graph: Graph
     drones: Dict[int, Drone]
     turn: int
+
+
