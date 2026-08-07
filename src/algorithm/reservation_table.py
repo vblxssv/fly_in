@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Dict, Tuple, Set, List
-from src.models import SpaceTimeState, Location, Graph, Zone
+from src.models import SpaceTimeState, Location, Graph, ZoneType
+from itertools import pairwise
 
 
 class ReservationTable(BaseModel):
@@ -11,7 +12,7 @@ class ReservationTable(BaseModel):
 
     def _check_zone(self, neighbor: SpaceTimeState) -> bool:
         zone = self.graph.get_zone(neighbor.zone_target)
-        reserved = self.zones.get(
+        reserved: Set[int] = self.zones.get(
             neighbor.zone_time,
             []
         )
@@ -83,5 +84,64 @@ class ReservationTable(BaseModel):
 
         return False
 
+    def _reserve_zone(self, zone: SpaceTimeState, drone_id: int) -> None:
+        target = self.graph.get_zone(zone.zone_target)
+        if target.type in (ZoneType.END, ZoneType.START):
+            return
+        key = zone.zone_time
+
+        if key not in self.zones:
+            self.zones[key] = set()
+
+        self.zones[key].add(drone_id)
+
+    # Здесь порядок аргументов важен!!!!
+    def _reserve_connection(self, first: SpaceTimeState,
+                            second: SpaceTimeState,
+                            drone_id: int) -> None:
+        connection = (frozenset({first.zone_target, second.zone_target}),
+                      second.time)
+
+        if connection not in self.edges:
+            self.edges[connection] = set()
+        self.edges[connection].add(drone_id)
+
     def reserve_path(self, path: List[SpaceTimeState], drone_id: int) -> None:
-        ...
+        for curr, next in pairwise(path):
+            if (curr.location == Location.ZONE
+                    and next.location == Location.ZONE):
+                self._reserve_zone(next, drone_id)
+                if curr.zone_target != next.zone_target:
+                    self._reserve_connection(curr, next, drone_id)
+            elif (curr.location == Location.ZONE
+                    and next.location == Location.EDGE):
+                self._reserve_connection(curr, next, drone_id)
+            elif (curr.location == Location.EDGE
+                    and next.location == Location.ZONE):
+                self._reserve_zone(next, drone_id)
+
+    def __str__(self) -> str:
+        lines = ["Reservation Table"]
+
+        lines.append("\nZones:")
+        if self.zones:
+            for (zone, time), drones in sorted(self.zones.items(),
+                                               key=lambda x: x[0][1]):
+                lines.append(
+                    f"  t={time:<3} {zone:<10} -> drones {sorted(drones)}"
+                )
+        else:
+            lines.append("  empty")
+
+        lines.append("\nEdges:")
+        if self.edges:
+            for (edge, time), drones in sorted(self.edges.items(),
+                                               key=lambda x: x[0][1]):
+                zones = " <-> ".join(sorted(edge))
+                lines.append(
+                    f"  t={time:<3} {zones:<15} -> drones {sorted(drones)}"
+                )
+        else:
+            lines.append("  empty")
+
+        return "\n".join(lines)

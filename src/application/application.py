@@ -1,12 +1,9 @@
 from src.input import Parser, Validator, Line
-
-from src.algorithm import Dijkstra, SpaceTimeAStar
-from src.renderer import ArcadeRenderer, ConsoleRenderer
-from src.logger import ConsoleLogger, FileLogger
-from src.algorithm import ReservationTable
+from src.simulation_engine import Engine
 from src.models import GraphFactory
 
 from typing import List
+from itertools import pairwise
 import argparse
 
 
@@ -14,14 +11,13 @@ class Application:
     def __init__(self, args: argparse.Namespace) -> None:
         content: List[Line] = Parser.parse(args.map)
         Validator.validate(content)
-        self.graph = GraphFactory.build(content)
-        print(self.graph)
+        graph = GraphFactory.build(content)
+        self.engine = Engine(graph, int(content[0].arguments[1]))
 
     def run(self) -> None:
-        heu = Dijkstra.calculate(self.graph, "end")
-        print(heu)
-        table = ReservationTable(graph=self.graph)
-
-        path = SpaceTimeAStar.calculate_path(self.graph, "start", "end", table, heu)
-        for i in path:
-            print(i)
+        result = self.engine.run()
+        path = result.paths[0]
+        for curr, next in pairwise(path):
+            print(curr)
+            print(next)
+            print("=" * 40)

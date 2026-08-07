@@ -1,11 +1,9 @@
-from .drone import Drone, DroneStatus
 from .graph import Graph
 from .zone import Zone, ZoneType, ZoneColor
-from .state import SimulationState
 from .connection import Connection
 from src.input import Line
 
-from typing import Dict, List
+from typing import List
 
 
 class GraphFactory:
@@ -14,7 +12,12 @@ class GraphFactory:
         name = line.arguments[1]
         pos = (int(line.arguments[2]), int(line.arguments[3]))
 
-        zone_type = ZoneType(line.meta.get("zone", ZoneType.NORMAL.value))
+        if line.arguments[0] == "start_hub:":
+            zone_type = ZoneType.START
+        elif line.arguments[0] == "end_hub:":
+            zone_type = ZoneType.END
+        else:
+            zone_type = ZoneType(line.meta.get("zone", ZoneType.NORMAL.value))
         max_drones = int(line.meta.get("max_drones", 1))
         color = ZoneColor(line.meta.get("color", ZoneColor.BLUE.value))
 

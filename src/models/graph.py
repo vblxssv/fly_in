@@ -1,4 +1,4 @@
-from .zone import Zone
+from .zone import Zone, ZoneType
 from .connection import Connection
 
 from typing import Dict, List, FrozenSet
@@ -30,6 +30,18 @@ class Graph(BaseModel):
 
     def get_connection(self, A: str, B: str) -> Connection:
         return self.connections[frozenset({A, B})]
+
+    def get_start(self) -> str:
+        for name, zone in self.zones.items():
+            if zone.type == ZoneType.START:
+                return name
+        raise ValueError("There is no start zone")
+
+    def get_end(self) -> str:
+        for name, zone in self.zones.items():
+            if zone.type == ZoneType.END:
+                return name
+        raise ValueError("There is no end zone")
 
     def __str__(self) -> str:
         lines = ["Graph:"]

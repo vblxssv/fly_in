@@ -9,6 +9,8 @@ class ZoneType(str, Enum):
     BLOCKED = "blocked"
     RESTRICTED = "restricted"
     PRIORITY = "priority"
+    START = "start"
+    END = "end"
 
     @property
     def priority(self) -> float:
@@ -17,6 +19,8 @@ class ZoneType(str, Enum):
             ZoneType.RESTRICTED: 2.0,
             ZoneType.PRIORITY: 0.99,
             ZoneType.BLOCKED: float("inf"),
+            ZoneType.END: 1.0,
+            ZoneType.START: 1.0,
         }[self]
 
     @property

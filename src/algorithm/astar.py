@@ -45,7 +45,8 @@ class SpaceTimeAStar:
                     ))
 
                 # Обычный переход в зону на некст ходу
-                elif zone.type in (ZoneType.NORMAL, ZoneType.PRIORITY):
+                elif zone.type in (ZoneType.NORMAL,
+                                   ZoneType.PRIORITY, ZoneType.END):
                     result.append(SpaceTimeState(
                         location=Location.ZONE,
                         zone_target=neighbor,
@@ -75,7 +76,6 @@ class SpaceTimeAStar:
         visited: Set[SpaceTimeState] = set()
         candidates = []  # Open List
         came_from: Dict[SpaceTimeState, SpaceTimeState] = {}
-
         counter = 0
 
         start_state = SpaceTimeState(
