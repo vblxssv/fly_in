@@ -16,7 +16,7 @@ class Application:
 
     def run(self) -> None:
         result = self.engine.run()
-        path = result.paths[0]
+        path = result.paths[24]
         for curr, next in pairwise(path):
             print(curr)
             print(next)
