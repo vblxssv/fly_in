@@ -4,7 +4,7 @@ from .graph import Graph
 from .zone import Zone, ZoneType
 from .factory import GraphFactory
 from .layout import Layout
-
+from .frame import Frame, Move, FrameFactory
 
 __all__ = [
     "Graph",
@@ -15,5 +15,8 @@ __all__ = [
     "SpaceTimeState",
     "Location",
     "GraphFactory",
-    "Layout"
+    "Layout",
+    "Frame",
+    "FrameFactory",
+    "Move"
 ]

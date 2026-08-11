@@ -6,32 +6,33 @@ LOGGER ?= file
 VENV = .venv
 
 ifeq ($(OS),Windows_NT)
-	PYTHON = $(VENV)/Scripts/python.exe
+	PYTHON = python
+	VENV_PYTHON = $(VENV)/Scripts/python.exe
 else
-	PYTHON = $(VENV)/bin/python3
+	PYTHON = python3
+	VENV_PYTHON = $(VENV)/bin/python3
 endif
-
 
 .PHONY: run clean lint install
 
 install: $(VENV)/.installed
 
 $(VENV)/.installed: requirements.txt
-	python3 -m venv $(VENV)
-	$(PYTHON) -m pip install --upgrade pip
-	$(PYTHON) -m pip install -r requirements.txt
+	$(PYTHON) -m venv $(VENV)
+	$(VENV_PYTHON) -m pip install --upgrade pip
+	$(VENV_PYTHON) -m pip install -r requirements.txt
 	touch $(VENV)/.installed
 
-
 run: install
-	$(PYTHON) main.py --map $(MAP) --algorithm $(ALGORITHM) --renderer $(RENDERER) \
+	$(VENV_PYTHON) main.py \
+		--map $(MAP) \
+		--algorithm $(ALGORITHM) \
+		--renderer $(RENDERER) \
 		--logger $(LOGGER)
 
-
 lint: install
-	$(PYTHON) -m flake8 src/
-	$(PYTHON) -m mypy src/ --disallow-untyped-defs
-
+	$(VENV_PYTHON) -m flake8 src/
+	$(VENV_PYTHON) -m mypy src/ --disallow-untyped-defs
 
 clean:
 	rm -rf $(VENV)
