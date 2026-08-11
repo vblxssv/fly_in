@@ -8,7 +8,7 @@ VENV = .venv
 ifeq ($(OS),Windows_NT)
 	PYTHON = $(VENV)/Scripts/python.exe
 else
-	PYTHON = $(VENV)/bin/python
+	PYTHON = $(VENV)/bin/python3
 endif
 
 
@@ -17,7 +17,7 @@ endif
 install: $(VENV)/.installed
 
 $(VENV)/.installed: requirements.txt
-	python -m venv $(VENV)
+	python3 -m venv $(VENV)
 	$(PYTHON) -m pip install --upgrade pip
 	$(PYTHON) -m pip install -r requirements.txt
 	touch $(VENV)/.installed

@@ -3,6 +3,7 @@ from .connection import Connection
 from .graph import Graph
 from .zone import Zone, ZoneType
 from .factory import GraphFactory
+from .layout import Layout
 
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     "SimulationState",
     "SpaceTimeState",
     "Location",
-    "GraphFactory"
+    "GraphFactory",
+    "Layout"
 ]
