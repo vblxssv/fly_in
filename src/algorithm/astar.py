@@ -74,7 +74,7 @@ class SpaceTimeAStar:
                        heuristic: Dict[str, float]) -> List[SpaceTimeState]:
 
         visited: Set[SpaceTimeState] = set()
-        candidates = []  # Open List
+        candidates: List[tuple[float, int, SpaceTimeState]] = []
         came_from: Dict[SpaceTimeState, SpaceTimeState] = {}
         counter = 0
 

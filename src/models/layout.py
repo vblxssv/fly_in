@@ -6,6 +6,8 @@ from typing import Dict, Tuple
 class Layout:
     def __init__(self, graph: Graph, width: int, height: int) -> None:
         self._positions = self._build_coordinates(graph, width, height)
+        self.width = width
+        self.height = height
 
     @staticmethod
     def _build_coordinates(

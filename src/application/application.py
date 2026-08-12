@@ -16,14 +16,14 @@ class Application:
         graph = GraphFactory.build(content)
         self.graph = graph
         self.engine = Engine(graph, int(content[0].arguments[1]))
-        self.layout = Layout(graph, 1500, 1000)
+        self.layout = Layout(graph, 1700, 1000)
+        self.renderer = ArcadeRenderer()
 
     def run(self) -> None:
         result = self.engine.run()
 
-        drones: List[Drone] = DronesFactory.build(result.paths, self.layout)
+        max_length = max(map(len, result.values())) - 1
+        print(f"Turns: {max_length}")
 
-        print(result.paths)
-
-        renderer = ArcadeRenderer()
-        renderer.play(self.graph, drones, self.layout)
+        drones: List[Drone] = DronesFactory.build(result, self.layout)
+        self.renderer.play(self.graph, drones, self.layout)

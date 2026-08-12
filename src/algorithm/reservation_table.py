@@ -14,28 +14,27 @@ class ReservationTable(BaseModel):
         zone = self.graph.get_zone(neighbor.zone_target)
         reserved: Set[int] = self.zones.get(
             neighbor.zone_time,
-            []
+            set()
         )
         return len(reserved) < zone.max_drones
 
     def _get_edge_key(self,
                       current: SpaceTimeState,
                       neighbor: SpaceTimeState
-                     ) -> tuple[frozenset[str], int]:
+                      ) -> tuple[frozenset[str], int]:
         return (
             frozenset({current.zone_target, neighbor.zone_target}),
             neighbor.time
         )
 
     def _check_connection(self, source: SpaceTimeState,
-                        target: SpaceTimeState) -> bool:
+                          target: SpaceTimeState) -> bool:
         connection = self.graph.get_connection(source.zone_target,
-                                            target.zone_target)
+                                               target.zone_target)
         key = self._get_edge_key(source, target)
         if len(self.edges.get(key, [])) >= connection.capacity:
             return False
 
-        # Переход в restricted-зону занимает связь ещё и на следующий ход
         if target.location == Location.EDGE:
             next_key = (key[0], key[1] + 1)
             if len(self.edges.get(next_key, [])) >= connection.capacity:

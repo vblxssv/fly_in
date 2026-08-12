@@ -1,6 +1,5 @@
-from .simulation_engine import Engine, SimulationResult
+from .simulation_engine import Engine
 
 __all__ = [
     "Engine",
-    "SimulationResult"
 ]

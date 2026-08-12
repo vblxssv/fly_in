@@ -13,8 +13,8 @@ class ArcadeRenderer:
 class _SimulationWindow(arcade.Window):
     def __init__(self, graph: Graph,
                  drones: List[Drone], layout: Layout) -> None:
-        super().__init__(1500, 1000, "Fly-in simulation")
-        arcade.set_background_color((228, 247, 247))
+        super().__init__(layout.width, layout.height, "Fly-in simulation")
+        arcade.set_background_color((228, 247, 247, 0))
 
         # Data
         self._graph = graph
@@ -22,7 +22,7 @@ class _SimulationWindow(arcade.Window):
         self._layout = layout
 
         # Time
-        self._turn_time = 0.5
+        self._turn_time = 1
         self._frame_index = 0
         self._elapsed_time = 0.0
 

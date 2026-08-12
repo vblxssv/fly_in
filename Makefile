@@ -1,6 +1,5 @@
 MAP ?= maps/challenger/01_the_impossible_dream.txt
-ALGORITHM ?= dijkstra
-RENDERER ?= arcade
+
 LOGGER ?= file
 
 VENV = .venv
@@ -26,8 +25,6 @@ $(VENV)/.installed: requirements.txt
 run: install
 	$(VENV_PYTHON) main.py \
 		--map $(MAP) \
-		--algorithm $(ALGORITHM) \
-		--renderer $(RENDERER) \
 		--logger $(LOGGER)
 
 lint: install

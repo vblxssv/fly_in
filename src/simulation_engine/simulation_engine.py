@@ -1,13 +1,6 @@
 from src.algorithm import SpaceTimeAStar, Dijkstra, ReservationTable
 from src.models import Graph, SpaceTimeState
-from pydantic import BaseModel
 from typing import Dict, List
-
-
-class SimulationResult(BaseModel):
-    graph: Graph
-    paths: Dict[int, List[SpaceTimeState]]
-    reservations: ReservationTable
 
 
 class Engine:
@@ -17,7 +10,7 @@ class Engine:
         self.heuristics = Dijkstra.calculate(graph, graph.get_end())
         self.table = ReservationTable(graph=graph)
 
-    def run(self) -> SimulationResult:
+    def run(self) -> Dict[int, List[SpaceTimeState]]:
         paths: Dict[int, List[SpaceTimeState]] = {}
         graph = self.graph
 
@@ -27,6 +20,4 @@ class Engine:
                 self.table, self.heuristics)
             paths[drone] = path
             self.table.reserve_path(path, drone)
-        return SimulationResult(graph=graph,
-                                paths=paths,
-                                reservations=self.table)
+        return paths
