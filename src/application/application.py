@@ -23,9 +23,7 @@ class Application:
 
         drones: List[Drone] = DronesFactory.build(result.paths, self.layout)
 
-        for drone in drones:
-            print(drone)
-        print(len(drones))
+        print(result.paths)
 
         renderer = ArcadeRenderer()
         renderer.play(self.graph, drones, self.layout)

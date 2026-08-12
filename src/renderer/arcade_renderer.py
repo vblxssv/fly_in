@@ -77,8 +77,8 @@ class _SimulationWindow(arcade.Window):
             )
             arcade.draw_text(
                 zone_name,
-                x - 20,
-                y + 20,
+                x,
+                y + 30,
                 arcade.color.BLACK,
                 12,
                 anchor_x="center",

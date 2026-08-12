@@ -21,22 +21,41 @@ class ReservationTable(BaseModel):
     def _get_edge_key(self,
                       current: SpaceTimeState,
                       neighbor: SpaceTimeState
-                      ) -> tuple[frozenset[str], int]:
+                     ) -> tuple[frozenset[str], int]:
         return (
-            frozenset({
-                current.zone_target,
-                neighbor.zone_target
-            }),
+            frozenset({current.zone_target, neighbor.zone_target}),
             neighbor.time
         )
 
     def _check_connection(self, source: SpaceTimeState,
-                          target: SpaceTimeState) -> bool:
+                        target: SpaceTimeState) -> bool:
         connection = self.graph.get_connection(source.zone_target,
-                                               target.zone_target)
-        reserved = self.edges.get(self._get_edge_key(source, target),
-                                  [])
-        return len(reserved) < connection.capacity
+                                            target.zone_target)
+        key = self._get_edge_key(source, target)
+        if len(self.edges.get(key, [])) >= connection.capacity:
+            return False
+
+        # Переход в restricted-зону занимает связь ещё и на следующий ход
+        if target.location == Location.EDGE:
+            next_key = (key[0], key[1] + 1)
+            if len(self.edges.get(next_key, [])) >= connection.capacity:
+                return False
+
+        return True
+
+    def _reserve_connection(self, first: SpaceTimeState,
+                            second: SpaceTimeState,
+                            drone_id: int) -> None:
+        key = self._get_edge_key(first, second)
+        if key not in self.edges:
+            self.edges[key] = set()
+        self.edges[key].add(drone_id)
+
+        if second.location == Location.EDGE:
+            next_key = (key[0], key[1] + 1)
+            if next_key not in self.edges:
+                self.edges[next_key] = set()
+            self.edges[next_key].add(drone_id)
 
     def is_free(self,
                 current: SpaceTimeState,
@@ -94,17 +113,6 @@ class ReservationTable(BaseModel):
             self.zones[key] = set()
 
         self.zones[key].add(drone_id)
-
-    # Здесь порядок аргументов важен!!!!
-    def _reserve_connection(self, first: SpaceTimeState,
-                            second: SpaceTimeState,
-                            drone_id: int) -> None:
-        connection = (frozenset({first.zone_target, second.zone_target}),
-                      second.time)
-
-        if connection not in self.edges:
-            self.edges[connection] = set()
-        self.edges[connection].add(drone_id)
 
     def reserve_path(self, path: List[SpaceTimeState], drone_id: int) -> None:
         for curr, next in pairwise(path):
