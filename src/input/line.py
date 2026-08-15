@@ -24,7 +24,7 @@ class DroneLine(BaseModel):
 @dataclass
 class HubLine:
     line: int
-    hub_type: str
+    hub_type: str  # start, end, hub
     name: str
     x: str
     y: str

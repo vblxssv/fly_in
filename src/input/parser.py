@@ -1,4 +1,5 @@
-from .line import Line
+from .line import DroneLine, HubLine, ConnectionLine
+from .content import Content
 
 from typing import List, Dict, Tuple
 
@@ -40,12 +41,37 @@ class Parser:
                 raise ValueError(
                     f"Line {line_number}: amount of '=' is not 1")
             key, value = pair.split("=", 1)
+            if key in meta_dic:
+                raise ValueError(
+                    f"Line {line_number}: duplicate meta argument: {key}"
+                )
             meta_dic[key] = value
         return meta_dic
 
     @staticmethod
-    def parse(path: str) -> List[Line]:
-        lines: List[Line] = []
+    def _parse_hub_line(line: int,
+                        arguments: List[str], meta: Dict[str, str]) -> HubLine:
+        ...
+
+    @staticmethod
+    def _parse_connection_line(line: int,
+                               arguments: List[str],
+                               meta: Dict[str, str]) -> ConnectionLine:
+        ...
+
+    @staticmethod
+    def _parse_drone_line(line: int,
+                          arguments: List[str],
+                          meta: Dict[str, str]) -> DroneLine:
+        if meta:
+            raise ValueError(f"Line {line}: nb_drones does not support meta")
+        
+
+    @staticmethod
+    def parse(path: str) -> Content:
+        drone_line = None
+        lines: List[HubLine | ConnectionLine] = []
+        first_instruction = True
 
         with open(path, "r", encoding="utf-8") as file:
             for line_number, raw_line in enumerate(file, start=1):
@@ -53,9 +79,37 @@ class Parser:
                 if not line or line.startswith("#"):
                     continue
                 parts = Parser._split_meta(line_number, line)
+
+                arguments = parts[0].split()
                 meta_dict: Dict[str, str] = Parser._parse_meta(
                     line_number, parts[1])
-                lines.append(Line(line_number=line_number,
-                                  arguments=parts[0].split(),
-                                  meta=meta_dict))
-        return lines
+                line_type = arguments[0]
+
+                if first_instruction:
+                    if line_type != "nb_drones:":
+                        raise ValueError(
+                            f"Line {line_number}: "
+                            "first instruction must be 'nb_drones:'"
+                        )
+                    first_instruction = False
+
+                if line_type == "nb_drones:":
+                    if drone_line is not None:
+                        raise ValueError(
+                            f"Line {line_number}: "
+                            "duplicate nb_drones instruction"
+                        )
+                    drone_line = (Parser._parse_drone_line(
+                        line_number, arguments, meta_dict))
+                elif line_type in ("hub:", "start_hub:", "end_hub:"):
+                    lines.append(Parser._parse_hub_line(
+                                 line_number, arguments, meta_dict))
+                elif line_type == "connection:":
+                    lines.append(Parser._parse_connection_line(
+                                 line_number, arguments, meta_dict))
+                else:
+                    raise ValueError(f"Line {line_number}: "
+                                     f"Unknown line type {line_type}")
+        if drone_line is None:
+            raise ValueError("Missing nb_drones instruction")
+        return Content(drone_line=drone_line, lines=lines)
