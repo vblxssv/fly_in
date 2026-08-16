@@ -1,4 +1,5 @@
-from src.models import Graph, ZoneType, ZoneRole, SpaceTimeState, Location, Zone
+from src.models import Graph, ZoneType, ZoneRole, SpaceTimeState, Location
+from src.models import Zone
 from typing import List, Set, Dict
 from .reservation_table import ReservationTable
 

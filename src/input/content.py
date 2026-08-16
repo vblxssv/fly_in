@@ -1,7 +1,7 @@
 from .line import DroneLine, HubLine, ConnectionLine
 
 from pydantic import BaseModel, model_validator
-from typing import List
+from typing import List, Any, Self
 
 
 class Content(BaseModel):
@@ -10,14 +10,14 @@ class Content(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_required_fields(cls, data):
+    def validate_required_fields(cls, data: Any) -> Any:
         if data.get("drone_line") is None:
             raise ValueError("Missing nb_drones instruction")
 
         return data
 
     @model_validator(mode="after")
-    def validate_content(self):
+    def validate_content(self) -> Self:
         self._validate_first_instruction()
         self._validate_special_hubs()
         self._validate_duplicate_zones()

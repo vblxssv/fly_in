@@ -10,10 +10,10 @@ class GraphFactory:
         zonerole = ZoneRole(line.hub_type)
         zonetype = ZoneType(line.meta.get("zone", ZoneType.NORMAL.value))
         zonecolor = ZoneColor(line.meta.get("color", ZoneColor.NONE.value))
-        zonecapacity = line.meta.get("max_drones", 1)
+        zonecapacity = int(line.meta.get("max_drones", 1))
 
         return Zone(name=line.name,
-                    pos=(line.x, line.y),
+                    pos=(int(line.x), int(line.y)),
                     type=zonetype,
                     role=zonerole,
                     max_drones=zonecapacity,
@@ -21,7 +21,7 @@ class GraphFactory:
 
     @staticmethod
     def _build_connection(line: ConnectionLine) -> Connection:
-        capacity = line.meta.get("max_link_capacity", 1)
+        capacity = int(line.meta.get("max_link_capacity", 1))
         return Connection(zones=frozenset([line.from_zone, line.to_zone]),
                           capacity=capacity)
 

@@ -104,7 +104,7 @@ class Parser:
             raise ValueError(f"Line {line}: nb_drones does not support meta")
         if len(arguments) != 2:
             raise ValueError(f"Line {line}: must be 2 arguments")
-        return DroneLine(line=line, amount=arguments[1])
+        return DroneLine(line=line, amount=int(arguments[1]))
 
     @staticmethod
     def parse(path: str) -> Content:
@@ -138,8 +138,11 @@ class Parser:
                             f"Line {line_number}: "
                             "duplicate nb_drones instruction"
                         )
-                    drone_line = (Parser._parse_drone_line(
-                        line_number, arguments, meta_dict))
+                    try:
+                        drone_line = (Parser._parse_drone_line(
+                            line_number, arguments, meta_dict))
+                    except ValueError as e:
+                        raise ValueError(f"Line {line_number}: {e}")
                 elif line_type in ("hub:", "start_hub:", "end_hub:"):
                     lines.append(Parser._parse_hub_line(
                                  line_number, arguments, meta_dict))

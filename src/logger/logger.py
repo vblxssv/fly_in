@@ -1,39 +1,65 @@
 from src.models import SpaceTimeState
 
 from typing import List, Dict
-from abc import ABC
+from abc import ABC, abstractmethod
 from enum import Enum
 
 
-class LoggerMode(Enum, str):
+class LoggerMode(str, Enum):
     FILE = "file"
     CONSOLE = "console"
 
 
 class IWriter(ABC):
     @staticmethod
+    @abstractmethod
     def log(turns: List[str]) -> None:
-        pass
+        ...
 
 
 class FileWriter(IWriter):
     @staticmethod
-    def log(turns: List[str]) -> None:
-        pass
+    def log(turns: List[str], path: str = "output.txt") -> None:
+        with open(path, "w") as f:
+            f.write("\n".join(turns) + "\n")
 
 
 class ConsoleWriter(IWriter):
     @staticmethod
     def log(turns: List[str]) -> None:
-        pass
+        for line in turns:
+            print(line)
 
 
-class Logger(ABC):
-    def __init__(self, paths: Dict[int, List[SpaceTimeState]],
+class Logger:
+    def __init__(self,
                  mode: LoggerMode) -> None:
-        self._turns = self._build_turns(paths)
         self._writer = (FileWriter()
                         if mode == LoggerMode.FILE else ConsoleWriter())
 
-    def log(self) -> None:
-        self._writer.log(self._turns)
+    def log(self, paths: Dict[int, List[SpaceTimeState]]) -> None:
+        turns = self._build_turns(paths)
+        self._writer.log(turns)
+
+    def _build_turns(self,
+                     paths: Dict[int, List[SpaceTimeState]]) -> List[str]:
+        if not paths:
+            return []
+
+        max_length = max(len(path) for path in paths.values()) - 1
+        turns: List[str] = []
+
+        for turn_index in range(1, max_length + 1):
+            movements: List[str] = []
+            for drone_id, path in paths.items():
+                if turn_index >= len(path):
+                    continue
+                prev_state = path[turn_index - 1]
+                state = path[turn_index]
+                if state.zone_target == prev_state.zone_target:
+                    continue
+                movements.append(f"D{drone_id}-{state.zone_target}")
+            if movements:
+                turns.append(" ".join(movements))
+
+        return turns
