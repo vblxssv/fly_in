@@ -51,13 +51,45 @@ class Parser:
     @staticmethod
     def _parse_hub_line(line: int,
                         arguments: List[str], meta: Dict[str, str]) -> HubLine:
-        ...
+        allowed_meta = {"zone", "max_drones", "color"}
+        unknown = meta.keys() - allowed_meta
+        if unknown:
+            raise ValueError(
+                f"Line {line}: unknown hub meta: {next(iter(unknown))}"
+            )
+        if len(arguments) != 4:
+            raise ValueError(f"Line {line}: must be 4 arguments")
+
+        return HubLine(line=line, hub_type=arguments[0][:-1],
+                       name=arguments[1],
+                       x=arguments[2],
+                       y=arguments[3],
+                       meta=meta)
 
     @staticmethod
     def _parse_connection_line(line: int,
                                arguments: List[str],
                                meta: Dict[str, str]) -> ConnectionLine:
-        ...
+        allowed_meta = {"max_link_capacity"}
+        unknown = meta.keys() - allowed_meta
+        if unknown:
+            raise ValueError(
+                f"Line {line}: unknown connection meta: {next(iter(unknown))}"
+            )
+        try:
+            connection, = arguments[1:]
+            from_zone, to_zone = connection.split("-")
+        except ValueError:
+            raise ValueError(
+                f"Line {line}: connection expects 1 argument "
+                "in format 'from-to'"
+            )
+        return ConnectionLine(
+            line=line,
+            from_zone=from_zone,
+            to_zone=to_zone,
+            meta=meta,
+        )
 
     @staticmethod
     def _parse_drone_line(line: int,
@@ -65,7 +97,9 @@ class Parser:
                           meta: Dict[str, str]) -> DroneLine:
         if meta:
             raise ValueError(f"Line {line}: nb_drones does not support meta")
-        
+        if len(arguments) != 2:
+            raise ValueError(f"Line {line}: must be 2 arguments")
+        return DroneLine(line=line, amount=arguments[1])
 
     @staticmethod
     def parse(path: str) -> Content:
