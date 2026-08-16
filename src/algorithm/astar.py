@@ -1,4 +1,4 @@
-from src.models import Graph, ZoneType, SpaceTimeState, Location, Zone
+from src.models import Graph, ZoneType, ZoneRole, SpaceTimeState, Location, Zone
 from typing import List, Set, Dict
 from .reservation_table import ReservationTable
 
@@ -45,8 +45,8 @@ class SpaceTimeAStar:
                     ))
 
                 # Обычный переход в зону на некст ходу
-                elif zone.type in (ZoneType.NORMAL,
-                                   ZoneType.PRIORITY, ZoneType.END):
+                elif (zone.type in (ZoneType.NORMAL, ZoneType.PRIORITY)
+                        or zone.role == ZoneRole.END):
                     result.append(SpaceTimeState(
                         location=Location.ZONE,
                         zone_target=neighbor,

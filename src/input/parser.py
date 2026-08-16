@@ -51,7 +51,12 @@ class Parser:
     @staticmethod
     def _parse_hub_line(line: int,
                         arguments: List[str], meta: Dict[str, str]) -> HubLine:
-        allowed_meta = {"zone", "max_drones", "color"}
+        hub_type = arguments[0][:-1]
+
+        if hub_type in ("start_hub", "end_hub"):
+            allowed_meta = {"color"}
+        else:
+            allowed_meta = {"zone", "max_drones", "color"}
         unknown = meta.keys() - allowed_meta
         if unknown:
             raise ValueError(

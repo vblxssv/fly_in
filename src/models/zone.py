@@ -9,8 +9,6 @@ class ZoneType(str, Enum):
     BLOCKED = "blocked"
     RESTRICTED = "restricted"
     PRIORITY = "priority"
-    START = "start"
-    END = "end"
 
     @property
     def priority(self) -> float:
@@ -19,13 +17,17 @@ class ZoneType(str, Enum):
             ZoneType.RESTRICTED: 2.0,
             ZoneType.PRIORITY: 0.99,
             ZoneType.BLOCKED: float("inf"),
-            ZoneType.END: 1.0,
-            ZoneType.START: 1.0,
         }[self]
 
     @property
     def cost(self) -> int:
         return ceil(self.priority)
+
+
+class ZoneRole(str, Enum):
+    NORMAL = "hub"
+    START = "start_hub"
+    END = "end_hub"
 
 
 class ZoneColor(str, Enum):
@@ -76,6 +78,7 @@ class Zone(BaseModel):
     name: str = Field(pattern=r"^[^-]+$")
     pos: Tuple[int, int]
     type: ZoneType = ZoneType.NORMAL
+    role: ZoneRole = ZoneRole.NORMAL
     max_drones: int = 1
     color: ZoneColor = ZoneColor.NONE
 

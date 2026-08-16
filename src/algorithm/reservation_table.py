@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Dict, Tuple, Set, List
-from src.models import SpaceTimeState, Location, Graph, ZoneType
+from src.models import SpaceTimeState, Location, Graph, ZoneRole
 from itertools import pairwise
 
 
@@ -104,7 +104,7 @@ class ReservationTable(BaseModel):
 
     def _reserve_zone(self, zone: SpaceTimeState, drone_id: int) -> None:
         target = self.graph.get_zone(zone.zone_target)
-        if target.type in (ZoneType.END, ZoneType.START):
+        if target.role in (ZoneRole.END, ZoneRole.START):
             return
         key = zone.zone_time
 
