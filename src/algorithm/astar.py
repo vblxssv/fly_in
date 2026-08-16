@@ -54,13 +54,6 @@ class SpaceTimeAStar:
                         time=current.time + 1
                     ))
         elif current.location == Location.EDGE:
-            #  Могу либо остаться в зоне или перейти на некст
-            # result.append(SpaceTimeState(  # Остаюсь на связи
-            #     location=Location.EDGE,
-            #     zone_target=current.zone_target,
-            #     time=current.time + 1
-            # ))
-
             result.append(SpaceTimeState(  # переход на некст
                 location=Location.ZONE,
                 zone_target=current.zone_target,

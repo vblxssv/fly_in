@@ -86,13 +86,6 @@ class ReservationTable(BaseModel):
         ):
             return self._check_connection(current, neighbor)
 
-        # ожидание на связи
-        # if (
-        #     current.location == Location.EDGE
-        #     and neighbor.location == Location.EDGE
-        # ):
-        #     return self._check_connection(current, neighbor)
-
         # выход со связи
         if (
             current.location == Location.EDGE
