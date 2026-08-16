@@ -11,3 +11,4 @@ src/*/.mypy_cache
 
 sim.log
 test_map.txt
+output.txt
