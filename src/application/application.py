@@ -7,7 +7,10 @@ import argparse
 
 
 class Application:
+    """Coordinate parsing, routing, logging, and rendering of a simulation."""
+
     def __init__(self, args: argparse.Namespace) -> None:
+        """Initialize application services from parsed command-line options."""
         self.content: Content = Parser.parse(args.map)
         self.graph = GraphFactory.build(self.content)
         self.layout = Layout(self.graph, 1600, 900)
@@ -16,6 +19,7 @@ class Application:
         self.logger = Logger(args.logger)
 
     def run(self) -> None:
+        """Run the simulation, log its result, and show the renderer."""
         result = self.engine.run()
         self.logger.log(result)
         drones = DronesFactory.build(result, self.layout)

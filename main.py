@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 
 def main() -> None:
+    """Parse command-line arguments and run the application."""
     app = Application(CLI.parse_args())
     app.run()
 

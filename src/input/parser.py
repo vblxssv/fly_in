@@ -5,8 +5,11 @@ from typing import List, Dict, Tuple
 
 
 class Parser:
+    """Parse Fly-in map files into validated content models."""
+
     @staticmethod
     def _split_meta(line_number: int, line: str) -> Tuple[str, str | None]:
+        """Separate an instruction from its optional bracketed metadata."""
         brackets: Tuple[int, int] = (line.count("["), line.count("]"))
 
         if brackets[0] > 1 or brackets[1] > 1:  # [[]]
@@ -33,6 +36,7 @@ class Parser:
 
     @staticmethod
     def _parse_meta(line_number: int, line: str | None) -> Dict[str, str]:
+        """Parse a metadata section into key-value pairs."""
         meta_dic: Dict[str, str] = {}
         if not line:
             return meta_dic
@@ -51,6 +55,7 @@ class Parser:
     @staticmethod
     def _parse_hub_line(line: int,
                         arguments: List[str], meta: Dict[str, str]) -> HubLine:
+        """Validate and convert hub instruction tokens to a ``HubLine``."""
         hub_type = arguments[0][:-1]
 
         if hub_type in ("start_hub", "end_hub"):
@@ -75,6 +80,7 @@ class Parser:
     def _parse_connection_line(line: int,
                                arguments: List[str],
                                meta: Dict[str, str]) -> ConnectionLine:
+        """Validate and convert connection tokens to a ``ConnectionLine``."""
         allowed_meta = {"max_link_capacity"}
         unknown = meta.keys() - allowed_meta
         if unknown:
@@ -100,6 +106,7 @@ class Parser:
     def _parse_drone_line(line: int,
                           arguments: List[str],
                           meta: Dict[str, str]) -> DroneLine:
+        """Validate and convert drone-count tokens to a ``DroneLine``."""
         if meta:
             raise ValueError(f"Line {line}: nb_drones does not support meta")
         if len(arguments) != 2:
@@ -108,6 +115,7 @@ class Parser:
 
     @staticmethod
     def parse(path: str) -> Content:
+        """Read a map file and return its validated content model."""
         drone_line = None
         lines: List[HubLine | ConnectionLine] = []
         first_instruction = True

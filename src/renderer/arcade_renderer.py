@@ -5,18 +5,24 @@ import arcade
 
 
 class ArcadeRenderer:
+    """Launch an Arcade-based graphical simulation renderer."""
+
     def play(self, graph: Graph, drones: List[Drone], layout: Layout) -> None:
+        """Open the simulation window and start the Arcade event loop."""
         _SimulationWindow(graph, drones, layout)
         arcade.run()
 
 
 class _SimulationWindow(arcade.Window):
+    """Render and control playback of one planned drone simulation."""
+
     def __init__(
         self,
         graph: Graph,
         drones: List[Drone],
         layout: Layout,
     ) -> None:
+        """Create a window with simulation data and playback state."""
         super().__init__(layout.width, layout.height, "Fly-in simulation")
         arcade.set_background_color((228, 247, 247, 0))
 
@@ -29,7 +35,7 @@ class _SimulationWindow(arcade.Window):
         self._min_speed = 0.2   # turns/sec
         self._max_speed = 10.0  # turns/sec
         self._speed = 1.0       # turns/sec
-        self._speed_step = 0.2  # равномерный шаг
+        self._speed_step = 0.2
 
         self._frame_index = 0
         self._elapsed_time = 0.0
@@ -46,6 +52,7 @@ class _SimulationWindow(arcade.Window):
         self._avg_turns_per_drone = self._compute_avg_turns_per_drone()
 
     def _compute_moved_per_turn(self) -> List[int]:
+        """Count drones that change position during each simulation turn."""
         moved = []
 
         for turn in range(self._total_turns):
@@ -66,6 +73,7 @@ class _SimulationWindow(arcade.Window):
         return moved
 
     def _compute_avg_turns_per_drone(self) -> float:
+        """Return the average path length in turns across all drones."""
         if not self._drones:
             return 0.0
 
@@ -75,10 +83,12 @@ class _SimulationWindow(arcade.Window):
 
     @property
     def _turn_time(self) -> float:
+        """Return the duration of one turn at the current playback speed."""
         return 1.0 / self._speed
 
     @property
     def _current_turn(self) -> int:
+        """Return the one-based turn number displayed in the HUD."""
         return min(
             self._frame_index + 1,
             self._total_turns,
@@ -86,6 +96,7 @@ class _SimulationWindow(arcade.Window):
 
     @property
     def _moved_this_turn(self) -> int:
+        """Return how many drones move during the displayed turn."""
         if not self._moved_per_turn:
             return 0
 
@@ -98,9 +109,11 @@ class _SimulationWindow(arcade.Window):
 
     @property
     def _progress(self) -> float:
+        """Return fractional progress through the current turn."""
         return self._elapsed_time / self._turn_time
 
     def _draw_connections(self) -> None:
+        """Draw every graph connection as a line between zone positions."""
         for connection in self._graph.connections.keys():
             zone_a, zone_b = connection
 
@@ -117,6 +130,7 @@ class _SimulationWindow(arcade.Window):
             )
 
     def _draw_zones(self) -> None:
+        """Draw all zones with their configured colors and labels."""
         radius = 14
 
         for zone_name, zone in self._graph.zones.items():
@@ -148,10 +162,12 @@ class _SimulationWindow(arcade.Window):
             )
 
     def _draw_graph(self) -> None:
+        """Draw the static graph connections and zones."""
         self._draw_connections()
         self._draw_zones()
 
     def _draw_drones(self) -> None:
+        """Draw drones interpolated between positions for the current turn."""
         progress = self._progress
 
         for drone in self._drones:
@@ -187,6 +203,7 @@ class _SimulationWindow(arcade.Window):
             )
 
     def _draw_hud(self) -> None:
+        """Draw playback statistics and controls status in the window."""
         lines = [
             f"Turn: {self._current_turn}/{self._total_turns}",
             f"Moved this turn: {self._moved_this_turn}/{len(self._drones)}",
@@ -212,6 +229,7 @@ class _SimulationWindow(arcade.Window):
             y -= 20
 
     def on_draw(self) -> None:
+        """Render the current simulation frame."""
         self.clear()
 
         self._draw_graph()
@@ -219,6 +237,7 @@ class _SimulationWindow(arcade.Window):
         self._draw_hud()
 
     def _update_frame(self, delta_time: float) -> None:
+        """Advance playback according to elapsed time and current speed."""
         if self._paused or self._finished:
             return
 
@@ -235,25 +254,30 @@ class _SimulationWindow(arcade.Window):
                 break
 
     def on_update(self, delta_time: float) -> None:
+        """Handle Arcade's periodic update callback."""
         self._update_frame(delta_time)
 
     def _restart(self) -> None:
+        """Reset playback to the initial simulation state."""
         self._frame_index = 0
         self._elapsed_time = 0.0
         self._paused = False
         self._finished = False
 
     def _increase_speed(self) -> None:
+        """Increase playback speed while preserving turn progress."""
         old_progress = self._progress
         self._speed = min(self._max_speed, self._speed + self._speed_step)
         self._elapsed_time = old_progress * self._turn_time
 
     def _decrease_speed(self) -> None:
+        """Decrease playback speed while preserving turn progress."""
         old_progress = self._progress
         self._speed = max(self._min_speed, self._speed - self._speed_step)
         self._elapsed_time = old_progress * self._turn_time
 
     def on_key_press(self, key: int, modifiers: int) -> None:
+        """Handle pause, restart, close, and speed keyboard controls."""
         if key == arcade.key.SPACE:
             if not self._finished:
                 self._paused = not self._paused

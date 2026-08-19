@@ -4,7 +4,12 @@ from typing import Dict, Tuple
 
 
 class Layout:
+    """Map graph coordinates to pixel positions in a render viewport."""
+
     def __init__(self, graph: Graph, width: int, height: int) -> None:
+        """
+        Create a display layout that fits graph coordinates in a viewport.
+        """
         self._positions = self._build_coordinates(graph, width, height)
         self.width = width
         self.height = height
@@ -15,6 +20,7 @@ class Layout:
         width: int,
         height: int,
     ) -> Dict[str, Tuple[int, int]]:
+        """Scale graph coordinates to pixel positions within the viewport."""
         zones = list(graph.zones.values())
 
         xs = [zone.pos[0] for zone in zones]
@@ -35,6 +41,7 @@ class Layout:
             target_min: float,
             target_max: float,
         ) -> float:
+            """Map a value from one numeric range to another."""
             if source_max == source_min:
                 return (target_min + target_max) / 2
 
@@ -68,4 +75,5 @@ class Layout:
 
     @property
     def positions(self) -> Dict[str, Tuple[int, int]]:
+        """Return zone names mapped to their pixel positions."""
         return self._positions

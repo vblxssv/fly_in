@@ -1,10 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import Tuple
 from enum import Enum
-from math import ceil
 
 
 class ZoneType(str, Enum):
+    """Enumerate zone traversal types and their routing behavior."""
+
     NORMAL = "normal"
     BLOCKED = "blocked"
     RESTRICTED = "restricted"
@@ -12,6 +13,7 @@ class ZoneType(str, Enum):
 
     @property
     def priority(self) -> float:
+        """Return the pathfinding cost multiplier for this zone type."""
         return {
             ZoneType.NORMAL: 1.0,
             ZoneType.RESTRICTED: 2.0,
@@ -19,18 +21,18 @@ class ZoneType(str, Enum):
             ZoneType.BLOCKED: float("inf"),
         }[self]
 
-    @property
-    def cost(self) -> int:
-        return ceil(self.priority)
-
 
 class ZoneRole(str, Enum):
+    """Enumerate the special role assigned to a zone."""
+
     NORMAL = "hub"
     START = "start_hub"
     END = "end_hub"
 
 
 class ZoneColor(str, Enum):
+    """Enumerate the supported zone colors for graphical rendering."""
+
     RED = "red"
     GREEN = "green"
     BLUE = "blue"
@@ -52,6 +54,7 @@ class ZoneColor(str, Enum):
 
     @property
     def rgb(self) -> tuple[int, int, int]:
+        """Return the RGB tuple used to render this color."""
         return {
             ZoneColor.RED: (220, 60, 60),
             ZoneColor.GREEN: (80, 200, 100),
@@ -75,6 +78,8 @@ class ZoneColor(str, Enum):
 
 
 class Zone(BaseModel):
+    """Represent a capacity-limited zone in the routing graph."""
+
     name: str = Field(pattern=r"^[^-]+$")
     pos: Tuple[int, int]
     type: ZoneType = ZoneType.NORMAL
@@ -84,8 +89,5 @@ class Zone(BaseModel):
 
     @property
     def priority(self) -> float:
+        """Return this zone's pathfinding cost multiplier."""
         return self.type.priority
-
-    @property
-    def cost(self) -> int:
-        return self.type.cost

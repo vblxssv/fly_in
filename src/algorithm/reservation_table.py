@@ -5,12 +5,15 @@ from itertools import pairwise
 
 
 class ReservationTable(BaseModel):
+    """Track zone and connection capacity reservations over simulation time."""
+
     graph: Graph
     zones: Dict[Tuple[str, int], Set[int]] = Field(default_factory=dict)
     edges: Dict[Tuple[frozenset[str], int],
                 Set[int]] = Field(default_factory=dict)
 
     def _check_zone(self, neighbor: SpaceTimeState) -> bool:
+        """Return whether the target zone has capacity at the next time."""
         zone = self.graph.get_zone(neighbor.zone_target)
         reserved: Set[int] = self.zones.get(
             neighbor.zone_time,
@@ -22,6 +25,7 @@ class ReservationTable(BaseModel):
                       current: SpaceTimeState,
                       neighbor: SpaceTimeState
                       ) -> tuple[frozenset[str], int]:
+        """Return the reservation key for a transition between two states."""
         return (
             frozenset({current.zone_target, neighbor.zone_target}),
             neighbor.time
@@ -29,6 +33,7 @@ class ReservationTable(BaseModel):
 
     def _check_connection(self, source: SpaceTimeState,
                           target: SpaceTimeState) -> bool:
+        """Return whether the connection has capacity for the transition."""
         connection = self.graph.get_connection(source.zone_target,
                                                target.zone_target)
         key = self._get_edge_key(source, target)
@@ -45,6 +50,7 @@ class ReservationTable(BaseModel):
     def _reserve_connection(self, first: SpaceTimeState,
                             second: SpaceTimeState,
                             drone_id: int) -> None:
+        """Reserve the traversed connection for the specified drone."""
         key = self._get_edge_key(first, second)
         if key not in self.edges:
             self.edges[key] = set()
@@ -60,8 +66,8 @@ class ReservationTable(BaseModel):
                 current: SpaceTimeState,
                 neighbor: SpaceTimeState
                 ) -> bool:
+        """Return whether a transition complies with all reservations."""
 
-        # ожидание в зоне
         if (
             current.location == Location.ZONE
             and neighbor.location == Location.ZONE
@@ -69,7 +75,6 @@ class ReservationTable(BaseModel):
         ):
             return self._check_zone(neighbor)
 
-        # обычный переход зона -> зона
         if (
             current.location == Location.ZONE
             and neighbor.location == Location.ZONE
@@ -79,14 +84,12 @@ class ReservationTable(BaseModel):
                 and self._check_zone(neighbor)
             )
 
-        # вход на связь
         if (
             current.location == Location.ZONE
             and neighbor.location == Location.EDGE
         ):
             return self._check_connection(current, neighbor)
 
-        # выход со связи
         if (
             current.location == Location.EDGE
             and neighbor.location == Location.ZONE
@@ -96,6 +99,7 @@ class ReservationTable(BaseModel):
         return False
 
     def _reserve_zone(self, zone: SpaceTimeState, drone_id: int) -> None:
+        """Reserve a non-terminal zone at a particular time for a drone."""
         target = self.graph.get_zone(zone.zone_target)
         if target.role in (ZoneRole.END, ZoneRole.START):
             return
@@ -107,6 +111,7 @@ class ReservationTable(BaseModel):
         self.zones[key].add(drone_id)
 
     def reserve_path(self, path: List[SpaceTimeState], drone_id: int) -> None:
+        """Record every zone and connection reservation in a drone path."""
         for curr, next in pairwise(path):
             if (curr.location == Location.ZONE
                     and next.location == Location.ZONE):
@@ -121,6 +126,7 @@ class ReservationTable(BaseModel):
                 self._reserve_zone(next, drone_id)
 
     def __str__(self) -> str:
+        """Return a readable summary of current reservations."""
         lines = ["Reservation Table"]
 
         lines.append("\nZones:")

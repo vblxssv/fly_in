@@ -5,12 +5,15 @@ from typing import List, Any, Self
 
 
 class Content(BaseModel):
+    """Represent and validate the complete contents of a map file."""
+
     drone_line: DroneLine
     lines: List[HubLine | ConnectionLine]
 
     @model_validator(mode="before")
     @classmethod
     def validate_required_fields(cls, data: Any) -> Any:
+        """Ensure input data includes the required drone-count instruction."""
         if data.get("drone_line") is None:
             raise ValueError("Missing nb_drones instruction")
 
@@ -18,6 +21,7 @@ class Content(BaseModel):
 
     @model_validator(mode="after")
     def validate_content(self) -> Self:
+        """Run cross-field validation for the parsed map content."""
         self._validate_first_instruction()
         self._validate_special_hubs()
         self._validate_duplicate_zones()
@@ -27,6 +31,7 @@ class Content(BaseModel):
         return self
 
     def _validate_connection_zones(self) -> None:
+        """Ensure every connection references zones declared earlier."""
         zones: set[str] = set()
 
         for line in self.lines:
@@ -48,6 +53,7 @@ class Content(BaseModel):
                     )
 
     def _validate_first_instruction(self) -> None:
+        """Ensure the drone-count instruction appears first."""
         line_numbers = [
             self.drone_line.line,
             *(line.line for line in self.lines),
@@ -60,6 +66,7 @@ class Content(BaseModel):
             )
 
     def _validate_special_hubs(self) -> None:
+        """Ensure exactly one start hub and one end hub are defined."""
         start_hub = None
         end_hub = None
 
@@ -88,6 +95,7 @@ class Content(BaseModel):
             raise ValueError("Missing end_hub")
 
     def _validate_duplicate_zones(self) -> None:
+        """Reject repeated hub names."""
         zones: set[str] = set()
 
         for line in self.lines:
@@ -102,6 +110,7 @@ class Content(BaseModel):
             zones.add(line.name)
 
     def _validate_duplicate_connections(self) -> None:
+        """Reject repeated undirected connections."""
         connections: set[frozenset[str]] = set()
 
         for line in self.lines:
@@ -122,6 +131,7 @@ class Content(BaseModel):
             connections.add(connection)
 
     def __str__(self) -> str:
+        """Return a human-readable representation of the parsed content."""
         result = f"Drone line: {self.drone_line}\n"
 
         for line in self.lines:
@@ -131,4 +141,5 @@ class Content(BaseModel):
 
     @property
     def nb_drones(self) -> int:
+        """Return the number of drones declared in the input."""
         return self.drone_line.amount

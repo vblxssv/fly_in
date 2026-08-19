@@ -7,11 +7,14 @@ import heapq
 
 
 class SpaceTimeAStar:
+    """Plan collision-free drone paths in the time-expanded graph using A*."""
+
     @staticmethod
     def _reconstruct_path(
         came_from: Dict[SpaceTimeState, SpaceTimeState],
         current: SpaceTimeState
     ) -> List[SpaceTimeState]:
+        """Rebuild a path by following predecessor states from the goal."""
 
         path = [current]
 
@@ -25,10 +28,11 @@ class SpaceTimeAStar:
     @staticmethod
     def _get_neighbors(graph: Graph,
                        current: SpaceTimeState) -> List[SpaceTimeState]:
+        """Return valid next space-time states before reservation checks."""
         result: List[SpaceTimeState] = []
 
         if current.location == Location.ZONE:
-            result.append(SpaceTimeState(  # Остаюсь в той же зоне
+            result.append(SpaceTimeState(
                 location=Location.ZONE,
                 zone_target=current.zone_target,
                 time=current.time + 1
@@ -37,7 +41,6 @@ class SpaceTimeAStar:
             for neighbor in neighbor_zones:
                 zone: Zone = graph.get_zone(neighbor)
 
-                # Зона требует перехода в связь
                 if zone.type == ZoneType.RESTRICTED:
                     result.append(SpaceTimeState(
                         location=Location.EDGE,
@@ -45,7 +48,6 @@ class SpaceTimeAStar:
                         time=current.time + 1
                     ))
 
-                # Обычный переход в зону на некст ходу
                 elif (zone.type in (ZoneType.NORMAL, ZoneType.PRIORITY)
                         or zone.role == ZoneRole.END):
                     result.append(SpaceTimeState(
@@ -54,7 +56,7 @@ class SpaceTimeAStar:
                         time=current.time + 1
                     ))
         elif current.location == Location.EDGE:
-            result.append(SpaceTimeState(  # переход на некст
+            result.append(SpaceTimeState(
                 location=Location.ZONE,
                 zone_target=current.zone_target,
                 time=current.time + 1
@@ -66,6 +68,7 @@ class SpaceTimeAStar:
     def _movement_cost(current: SpaceTimeState,
                        neighbor: SpaceTimeState,
                        zone: Zone) -> float:
+        """Calculate the cost of moving from one state to another."""
         if (current.location == Location.ZONE
                 and neighbor.location == Location.ZONE
                 and current.zone_target == neighbor.zone_target):
@@ -79,6 +82,7 @@ class SpaceTimeAStar:
     def calculate_path(graph: Graph, start: str,
                        end: str, table: ReservationTable,
                        heuristic: Dict[str, float]) -> List[SpaceTimeState]:
+        """Find a reservation-safe path from ``start`` to ``end`` using A*."""
 
         visited: Set[SpaceTimeState] = set()
         candidates: List[tuple[float, int, SpaceTimeState]] = []

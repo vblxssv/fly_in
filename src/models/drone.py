@@ -9,15 +9,22 @@ import random
 
 @dataclass
 class Drone:
+    """Store the render-ready route and color of a drone."""
+
     drone_id: int
     path: List[Tuple[int, int]]
     color: Tuple[int, int, int]
 
 
 class DronesFactory:
+    """Build render-ready drone models from planned space-time paths."""
+
     @staticmethod
     def build(paths: Dict[int, List[SpaceTimeState]],
               layout: Layout) -> List[Drone]:
+        """
+        Convert space-time paths into renderable drones with random colors.
+        """
         drones: List[Drone] = []
         for drone_id, path in paths.items():
             points: List[Tuple[int, int]] = []

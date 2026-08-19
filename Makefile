@@ -12,7 +12,7 @@ else
 	VENV_PYTHON = $(VENV)/bin/python3
 endif
 
-.PHONY: run clean lint install
+.PHONY: run debug clean lint lint-strict install
 
 install: $(VENV)/.installed
 
@@ -27,9 +27,19 @@ run: install
 		--map $(MAP) \
 		--logger $(LOGGER)
 
+debug: install
+	$(VENV_PYTHON) -m pdb main.py \
+		--map $(MAP) \
+		--logger $(LOGGER)
+
 lint: install
-	$(VENV_PYTHON) -m flake8 src/
-	$(VENV_PYTHON) -m mypy src/ --disallow-untyped-defs
+	$(VENV_PYTHON) -m flake8 .
+	$(VENV_PYTHON) -m mypy . --warn-return-any --warn-unused-ignores \
+		--ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+
+lint-strict: install
+	$(VENV_PYTHON) -m flake8 .
+	$(VENV_PYTHON) -m mypy . --strict
 
 clean:
 	rm -rf $(VENV)

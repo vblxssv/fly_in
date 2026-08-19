@@ -4,8 +4,11 @@ from src.models import Graph, ZoneType
 
 
 class Dijkstra:
+    """Calculate reverse shortest-path estimates for A* pathfinding."""
+
     @staticmethod
     def calculate(graph: Graph, target_zone: str) -> Dict[str, float]:
+        """Calculate reverse shortest-path costs to a target zone."""
         reversed_adj: Dict[str, List[str]] = {
             zone: [] for zone in graph.zones
         }
