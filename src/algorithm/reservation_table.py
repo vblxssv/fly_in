@@ -32,12 +32,12 @@ class ReservationTable(BaseModel):
         connection = self.graph.get_connection(source.zone_target,
                                                target.zone_target)
         key = self._get_edge_key(source, target)
-        if len(self.edges.get(key, [])) >= connection.capacity:
+        if len(self.edges.get(key, set())) >= connection.capacity:
             return False
 
         if target.location == Location.EDGE:
             next_key = (key[0], key[1] + 1)
-            if len(self.edges.get(next_key, [])) >= connection.capacity:
+            if len(self.edges.get(next_key, set())) >= connection.capacity:
                 return False
 
         return True
