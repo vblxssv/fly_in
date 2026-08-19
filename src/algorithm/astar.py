@@ -139,4 +139,4 @@ class SpaceTimeAStar:
                                                      float("inf"))
                 counter += 1
                 heapq.heappush(candidates, (f_score, counter, neighbor))
-        return []
+        raise ValueError("Path is not found")
