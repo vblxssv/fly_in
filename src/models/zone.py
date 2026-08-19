@@ -79,7 +79,7 @@ class Zone(BaseModel):
     pos: Tuple[int, int]
     type: ZoneType = ZoneType.NORMAL
     role: ZoneRole = ZoneRole.NORMAL
-    max_drones: int = 1
+    max_drones: int = Field(gt=0)
     color: ZoneColor = ZoneColor.NONE
 
     @property

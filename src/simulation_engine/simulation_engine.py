@@ -11,6 +11,8 @@ class Engine:
         self.table = ReservationTable(graph=graph)
 
     def run(self) -> Dict[int, List[SpaceTimeState]]:
+        if self.heuristics[self.graph.get_start()] == float("inf"):
+            raise ValueError("There is no path between start and end")
         paths: Dict[int, List[SpaceTimeState]] = {}
         graph = self.graph
 
