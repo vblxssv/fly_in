@@ -63,6 +63,19 @@ class SpaceTimeAStar:
         return result
 
     @staticmethod
+    def _movement_cost(current: SpaceTimeState,
+                       neighbor: SpaceTimeState,
+                       zone: Zone) -> float:
+        if (current.location == Location.ZONE
+                and neighbor.location == Location.ZONE
+                and current.zone_target == neighbor.zone_target):
+            return 1.0
+
+        if current.location == Location.EDGE:
+            return 0.0
+        return zone.priority
+
+    @staticmethod
     def calculate_path(graph: Graph, start: str,
                        end: str, table: ReservationTable,
                        heuristic: Dict[str, float]) -> List[SpaceTimeState]:
@@ -107,15 +120,10 @@ class SpaceTimeAStar:
                 if not table.is_free(current, neighbor):
                     continue
 
-                if (current.location == Location.ZONE
-                        and neighbor.location == Location.ZONE
-                        and current.zone_target == neighbor.zone_target):
-                    neighbor_g = g_score[current] + 1
-                else:
-                    neighbor_g = (
-                        g_score[current]
-                        + zone.priority
-                    )
+                edge_cost = SpaceTimeAStar._movement_cost(
+                    current, neighbor, zone
+                )
+                neighbor_g = g_score[current] + edge_cost
 
                 if g_score.get(neighbor, float("inf")) <= neighbor_g:
                     continue

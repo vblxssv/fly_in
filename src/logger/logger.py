@@ -1,4 +1,4 @@
-from src.models import SpaceTimeState
+from src.models import SpaceTimeState, Location
 
 from typing import List, Dict
 from abc import ABC, abstractmethod
@@ -41,6 +41,26 @@ class Logger:
         turns = self._build_turns(paths)
         self._writer.log(turns)
 
+    @staticmethod
+    def _format_movement(drone_id: int,
+                         prev_state: SpaceTimeState,
+                         state: SpaceTimeState) -> str:
+        if state.location == Location.EDGE:
+            label = f"{prev_state.zone_target}-{state.zone_target}"
+        else:
+            label = state.zone_target
+
+        return f"D{drone_id}-{label}"
+
+    @staticmethod
+    def _is_stationary(prev_state: SpaceTimeState,
+                       state: SpaceTimeState) -> bool:
+        return (
+            state.location == Location.ZONE
+            and prev_state.location == Location.ZONE
+            and state.zone_target == prev_state.zone_target
+        )
+
     def _build_turns(self,
                      paths: Dict[int, List[SpaceTimeState]]) -> List[str]:
         if not paths:
@@ -56,9 +76,13 @@ class Logger:
                     continue
                 prev_state = path[turn_index - 1]
                 state = path[turn_index]
-                if state.zone_target == prev_state.zone_target:
+
+                if self._is_stationary(prev_state, state):
                     continue
-                movements.append(f"D{drone_id}-{state.zone_target}")
+
+                movements.append(
+                    self._format_movement(drone_id, prev_state, state)
+                )
             if movements:
                 turns.append(" ".join(movements))
 
