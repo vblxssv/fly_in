@@ -101,7 +101,6 @@ class Logger:
                 movements.append(
                     self._format_movement(drone_id, prev_state, state)
                 )
-            if movements:
-                turns.append(" ".join(movements))
+            turns.append(" ".join(movements))
 
         return turns

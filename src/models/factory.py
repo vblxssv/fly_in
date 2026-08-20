@@ -1,5 +1,5 @@
 from .graph import Graph
-from .zone import Zone, ZoneRole, ZoneType, ZoneColor
+from .zone import Zone, ZoneRole, ZoneType
 from .connection import Connection
 from src.input import Content, ConnectionLine, HubLine
 
@@ -12,7 +12,7 @@ class GraphFactory:
         """Create a ``Zone`` model from a parsed hub instruction."""
         zonerole = ZoneRole(line.hub_type)
         zonetype = ZoneType(line.meta.get("zone", ZoneType.NORMAL.value))
-        zonecolor = ZoneColor(line.meta.get("color", ZoneColor.NONE.value))
+        zonecolor = line.meta.get("color", "none")
         zonecapacity = int(line.meta.get("max_drones", 1))
 
         return Zone(name=line.name,

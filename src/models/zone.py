@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Tuple
 from enum import Enum
+from PIL import ImageColor
 
 
 class ZoneType(str, Enum):
@@ -30,53 +31,6 @@ class ZoneRole(str, Enum):
     END = "end_hub"
 
 
-class ZoneColor(str, Enum):
-    """Enumerate the supported zone colors for graphical rendering."""
-
-    RED = "red"
-    GREEN = "green"
-    BLUE = "blue"
-    PURPLE = "purple"
-    MAGENTA = 'magenta'
-    BLACK = "black"
-    BROWN = "brown"
-    ORANGE = "orange"
-    MAROON = "maroon"
-    GOLD = 'gold'
-    DARKRED = 'darkred'
-    VIOLET = 'violet'
-    CRIMSON = 'crimson'
-    RAINBOW = 'rainbow'
-    CYAN = "cyan"
-    YELLOW = "yellow"
-    LIME = 'lime'
-    NONE = "none"
-
-    @property
-    def rgb(self) -> tuple[int, int, int]:
-        """Return the RGB tuple used to render this color."""
-        return {
-            ZoneColor.RED: (220, 60, 60),
-            ZoneColor.GREEN: (80, 200, 100),
-            ZoneColor.BLUE: (70, 130, 200),
-            ZoneColor.PURPLE: (160, 90, 200),
-            ZoneColor.BLACK: (40, 40, 40),
-            ZoneColor.BROWN: (140, 90, 50),
-            ZoneColor.ORANGE: (230, 140, 50),
-            ZoneColor.MAROON: (128, 0, 0),
-            ZoneColor.GOLD: (212, 175, 55),
-            ZoneColor.DARKRED: (139, 0, 0),
-            ZoneColor.VIOLET: (200, 120, 220),
-            ZoneColor.CRIMSON: (220, 20, 60),
-            ZoneColor.CYAN: (60, 200, 200),
-            ZoneColor.YELLOW: (230, 220, 60),
-            ZoneColor.RAINBOW: (255, 105, 180),
-            ZoneColor.NONE: (70, 130, 200),
-            ZoneColor.LIME: (191, 255, 0),
-            ZoneColor.MAGENTA: (255, 0, 255)
-        }[self]
-
-
 class Zone(BaseModel):
     """Represent a capacity-limited zone in the routing graph."""
 
@@ -85,9 +39,18 @@ class Zone(BaseModel):
     type: ZoneType = ZoneType.NORMAL
     role: ZoneRole = ZoneRole.NORMAL
     max_drones: int = Field(gt=0)
-    color: ZoneColor = ZoneColor.NONE
+    color: str = Field(default="none", pattern=r"^\S+$")
 
     @property
     def priority(self) -> float:
         """Return this zone's pathfinding cost multiplier."""
         return self.type.priority
+
+    @property
+    def rgb(self) -> tuple[int, int, int]:
+        """Convert the configured color name to an RGB tuple for rendering."""
+        try:
+            color = ImageColor.getrgb(self.color)
+            return color[0], color[1], color[2]
+        except ValueError:
+            return (70, 130, 200)

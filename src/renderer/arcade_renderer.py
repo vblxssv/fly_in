@@ -140,7 +140,7 @@ class _SimulationWindow(arcade.Window):
                 x,
                 y,
                 radius,
-                zone.color.rgb,
+                zone.rgb,
             )
 
             arcade.draw_circle_outline(

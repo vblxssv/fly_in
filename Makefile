@@ -1,16 +1,10 @@
 MAP ?= maps/challenger/01_the_impossible_dream.txt
-
 LOGGER ?= file
 
-VENV = .venv
-
-ifeq ($(OS),Windows_NT)
-	PYTHON = python
-	VENV_PYTHON = $(VENV)/Scripts/python.exe
-else
-	PYTHON = python3
-	VENV_PYTHON = $(VENV)/bin/python3
-endif
+VENV := .venv
+VENV_PYTHON := $(VENV)/bin/python3
+FLAKE8_EXCLUDE := .venv,.mypy_cache,.pytest_cache,__pycache__
+PYTHON := python3
 
 .PHONY: run debug clean lint lint-strict install
 
@@ -33,12 +27,12 @@ debug: install
 		--logger $(LOGGER)
 
 lint: install
-	$(VENV_PYTHON) -m flake8 .
+	$(VENV_PYTHON) -m flake8 . --exclude=$(FLAKE8_EXCLUDE)
 	$(VENV_PYTHON) -m mypy . --warn-return-any --warn-unused-ignores \
 		--ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict: install
-	$(VENV_PYTHON) -m flake8 .
+	$(VENV_PYTHON) -m flake8 . --exclude=$(FLAKE8_EXCLUDE)
 	$(VENV_PYTHON) -m mypy . --strict
 
 clean:

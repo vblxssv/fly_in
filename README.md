@@ -18,7 +18,9 @@ engine, textual turn-by-turn output, and an Arcade graphical visualization.
 - Dependencies listed in `requirements.txt`
 - GNU Make (for the provided Makefile commands)
 
-## Installation
+## Instructions
+
+### Installation
 
 Create the virtual environment and install dependencies:
 
@@ -26,15 +28,7 @@ Create the virtual environment and install dependencies:
 make install
 ```
 
-On Windows, run the Makefile commands from an MSYS environment, or install the
-dependencies manually:
-
-```bash
-python -m venv .venv
-.venv/Scripts/python.exe -m pip install -r requirements.txt
-```
-
-## Usage
+### Usage
 
 Run the simulation with the default map and file logger:
 
@@ -69,7 +63,7 @@ make clean
 The command-line interface also accepts these options directly:
 
 ```bash
-python main.py --map maps/easy/01_linear_path.txt --logger console
+.venv/bin/python3 main.py --map maps/easy/01_linear_path.txt --logger console
 ```
 
 - `--map` is the path to an input map file.
@@ -98,8 +92,14 @@ supports `max_link_capacity`. The supported zone types are `normal`,
 
 The application models the map as an undirected graph. Before planning paths,
 it runs reverse Dijkstra from the end hub to compute an admissible cost estimate
-for every zone. For each drone, a space-time A* search then finds a path from
-the start to the end.
+for every zone. These distances are used as the heuristic for the route search.
+
+Routes are planned with Cooperative A*: drones are handled one at a time, and
+each drone uses a space-time A* search from the start to the end. After a route
+is found, its zone and connection occupancy is saved in a reservation table.
+Every following search consults these reservations, which lets it select another
+route or add a wait action instead of creating a collision or exceeding a
+capacity limit.
 
 Each A* state contains a destination zone, a time step, and whether the drone
 is in a zone or on a connection. This represents restricted zones as a
@@ -107,11 +107,9 @@ two-turn movement: entering the connection consumes the first turn, and the
 drone reaches the destination on the next one. Blocked zones are never added
 to a route, and priority zones have a lower routing cost.
 
-After a path is selected, its zone and connection usage is recorded in a
-reservation table. Later searches consult this table, so they can wait when
-needed and cannot exceed `max_drones` or `max_link_capacity`. Start and end
-hubs are intentionally exempt from zone occupancy limits, as required by the
-subject.
+The reservation table enforces `max_drones` and `max_link_capacity`. Start and
+end hubs are intentionally exempt from zone occupancy limits, as required by
+the subject.
 
 ## Visual representation
 
@@ -133,7 +131,4 @@ one simulation turn, and each item has the form `D<ID>-<destination>`.
 
 ## AI usage
 
-AI was used as a development assistant to review the project against the
-subject requirements, add and improve PEP 257 docstrings, remove Russian code
-comments, add the Makefile `debug` target, and draft this README. All generated
-changes were reviewed and validated by the project author.
+AI was used strictly as an **assistive tool for learning, explanation, and documentation**, while all implementation and final design decisions were made by the author of the project.
